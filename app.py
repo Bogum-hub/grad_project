@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, request, session, jsonify
 from flask_mysqldb import MySQL
 from flask_cors import CORS
 from drug import transform_image, get_pred
@@ -27,16 +27,17 @@ def login():
         account = cursor.fetchone()
         if account:
             session['id'] = account['mId']
-            return jsonify({'status':'Login successfully'})
+            return jsonify({'status':'Login successfully', 'message': 'hello'+ str(session['id']) })
         else:
             #incorrect account / password
             return jsonify({'status':'Account not exists!'})
     return jsonify({'status':'Lack of info'})
 
-@app.route('/logout')
+@app.route('/logout', methods =['GET', 'POST'])
 def logout():
-    session.pop('id', None)
-    return jsonify({'Result':'Logout sucessfully'})
+    if request.method == 'POST':
+        session.pop('id', None)
+        return jsonify({'Result':'Logout sucessfully'})
 
 @app.route('/register', methods =['GET', 'POST'])
 def register():
@@ -74,9 +75,8 @@ def drug():
 
 @app.route('/search_schedule', methods =['GET', 'POST']) #查詢時程
 def schedule():
-    result=''
     if request.method =='POST':
-        mId = session.get(id)
+        mId = session['id']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('select drug_permit_license ,chName, startDate, endDate from schedule as s, drug as d, member as m where s.scheduleMid = % s AND d.drugId=s.scheduleDrugId AND m.mId = s.scheduleMid;', (mId, ))
         result = cursor.fetchall()
@@ -89,24 +89,28 @@ def schedule():
 
 @app.route('/create_schedule', methods =['GET', 'POST']) #寫入資料表
 def create():
-    if request.method == 'POST' and 'drug' in request.json and 'timing' in request.json and 'period' in request.json and 'hint' in request.json:
+    if request.method == 'POST' and 'drug' in request.json and 'startDate' in request.json and 'endDate' in request.json and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json:
         
         drug_temp = request.json['drug'] 
         cursor1 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor1.execute('select drugId from drug where chName=%s', (drug_temp, ))
-        drug = cursor.fetchone()
-        scheduleDrugId = drug['drugId']#先抓出使用者所輸入的藥品名稱
-
-        mid = session.get(id)
-        timing = request.json['timing'] #用藥時間 睡前/三餐/其他
-        period = request.json['period'] #用藥時長 兩個月/三個月...
-        hint = request.json['hint'] #定時提醒
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('insert into schedule (scheduleMid, scheduleDrugId, timing, period, isHint) values (%s, %s, %s, %s, %s)', (mid, scheduleDrugId, timing, period, hint, ))
-        mysql.connection.commit()
-        return jsonify({'Result':'Creat successfully!'})
+        cursor1.execute('select drugId from drug where chName=%s or enName=%s', (drug_temp, drug_temp))
+        drug = cursor1.fetchone()
+        if drug:
+            scheduleDrugId = drug['drugId']#先抓出使用者所輸入的藥品名稱
+            mid = session['id']
+            startDate = request.json['startDate'] #開始吃藥時間
+            endDate = request.json['endDate'] #結束吃藥時間
+            duration = request.json['duration'] #間隔時間
+            daily = request.json['daily'] #每天幾點吃
+            hint = request.json['hint'] #定時提醒
+            cursor2 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor2.execute('insert into schedule(scheduleMid, scheduleDrugId, startDate, endDate, duration, daily, isHint) values (%s, %s, %s, %s, %s, %s, %s)', (mid, scheduleDrugId, startDate, endDate, duration, daily, hint, ))
+            mysql.connection.commit()
+            return jsonify({'Result':' Schedule create successfully!'})
+        else:
+            return jsonify({'Result':'Drug not exist!'})
     else:
-        return jsonify({'Result':'Something went wrong'})
+        return jsonify({'Result': 'error!'})
         
 #拍攝藥品辨識
 @app.route('/pred', methods=['POST','GET'])

@@ -1,3 +1,4 @@
+import json
 from flask import Flask, request, session, jsonify
 from flask_mysqldb import MySQL
 from flask_cors import CORS
@@ -73,20 +74,6 @@ def drug():
             return jsonify({'Result': 'false'})
     return jsonify({'Result': 'Wrong request'})
 
-@app.route('/search_schedule', methods =['GET', 'POST']) #查詢時程
-def schedule():
-    if request.method =='POST':
-        mId = session['id']
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('select drug_permit_license ,chName, startDate, endDate from schedule as s, drug as d, member as m where s.scheduleMid = % s AND d.drugId=s.scheduleDrugId AND m.mId = s.scheduleMid;', (mId, ))
-        result = cursor.fetchall()
-        if result:
-            return jsonify({"Result":result})
-        else:
-            return jsonify({"Result":'Empty'})
-    else:
-        return jsonify({"Result":'Wrong Request'})
-
 @app.route('/create_schedule', methods =['GET', 'POST']) #寫入資料表
 def create():
     if request.method == 'POST' and 'drug' in request.json and 'startDate' in request.json and 'endDate' in request.json and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json:
@@ -111,7 +98,31 @@ def create():
             return jsonify({'Result':'Drug not exist!'})
     else:
         return jsonify({'Result': 'error!'})
+
+@app.route('/search_schedule', methods =['GET', 'POST']) #查詢時程
+def schedule():
+    if request.method =='POST' and 'date' in request.json:
         
+        mid = session['id']
+        date = request.json['date']
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('select sId, startdate, bag, ishint, chname, enName from schedule, drug where startdate = %s and scheduleMid = %s and drug.drugId = scheduleDrugId' , (date, mid, ))
+        result = list(cursor.fetchall())
+
+        return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
+    else:
+        return jsonify({"Result":'Wrong Request'})
+
+#刪除行程表
+@app.route('/delete_schedule/<int:sid>', methods=['DELETE'])
+def schedule_delete(sid):
+
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute("DELETE FROM schedule WHERE sid = %s" % ( sid))
+    mysql.connection.commit()
+    cursor.close()
+    return jsonify({'Result':'Delete Successfully'})
+
 #拍攝藥品辨識
 @app.route('/pred', methods=['POST','GET'])
 def pred():

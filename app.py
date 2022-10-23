@@ -4,6 +4,7 @@ from flask_mysqldb import MySQL
 from flask_cors import CORS
 from drug import transform_image, get_pred
 import MySQLdb.cursors
+import operator
 
 app = Flask(__name__)
 CORS(app)
@@ -106,7 +107,7 @@ def schedule():
         mid = session['id']
         date = request.json['date']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('select sId, startdate, bag, ishint, chname, enName from schedule, drug where startdate = %s and scheduleMid = %s and drug.drugId = scheduleDrugId' , (date, mid, ))
+        cursor.execute('select sId, startdate, daily, bag, ishint, chname, enName from schedule, drug where startdate = %s and scheduleMid = %s and drug.drugId = scheduleDrugId' , (date, mid, ))
         result = list(cursor.fetchall())
 
         return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
@@ -131,13 +132,21 @@ def pred():
         img_byte = file.read()
         tensor = transform_image(img_byte)
         result = get_pred(tensor)
+        drug = {}
 
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('select * from drug where drug_permit_license = %s', (result,))
-        drug =  cursor.fetchone()
-        return jsonify({'中文名字': drug['chName'], '英文名字':drug['enName'], '形狀': drug['shape'], '顏色': drug['color'], '適應症' : drug['indication'], '劑型' : drug['type']})
+        for i in range(5):
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('select * from drug where drug_permit_license = %s', (result[0][i],))
+            temp =  cursor.fetchone()
+            drug[temp['chName']] = result[1][i]
+            # sorted_drug = sorted(drug.items(), key=operator.itemgetter(1), reverse=True)
+        return jsonify(drug)
     else:
         return jsonify({'Result':'Wrong request'})
+
+@app.route('/interaction', methods= ['GET', 'POST'])
+def interaction():
+    pass
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

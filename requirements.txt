@@ -1,16 +1,2 @@
 gunicorn
 Flask 
-request
-session
-jsonify
-CORS
-MySQL
-MySQLdb.cursors
-operator
-json
-flask_mysqldb
-flask_cors
-torch
-io
-PIL
-torchvision

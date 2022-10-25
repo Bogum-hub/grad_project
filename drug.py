@@ -44,7 +44,7 @@ def get_pred(image_tensor):
     _, test_indices = torch.sort(outputs, descending = True)
 
     for idx in test_indices[0][:5]:
-        c[b[idx.item()]] = percentage[idx].item()
+        c[b[idx.item()]] = round(percentage[idx].item(),2)
         
     return list(c.keys()), list(c.values())
 

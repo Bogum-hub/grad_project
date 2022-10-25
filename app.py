@@ -11,8 +11,8 @@ CORS(app)
 
 app.secret_key = 'xxxx'
 
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_HOST'] = 'dont-drug-out.cwvau6dpzkxj.ap-northeast-1.rds.amazonaws.com'
+app.config['MYSQL_USER'] = 'admin'
 app.config['MYSQL_PASSWORD'] = '12345678'
 app.config['MYSQL_DB'] = 'mydb'
 app.config['JSON_AS_ASCII'] = False
@@ -115,14 +115,20 @@ def schedule():
         return jsonify({"Result":'Wrong Request'})
 
 #刪除行程表
-@app.route('/delete_schedule/<int:sid>', methods=['DELETE'])
+@app.route('/delete_schedule', methods=['POST','GET'])
 def schedule_delete(sid):
+    if request.method == 'POST' and 'sid' in request.json and 'len' in request.json:
+        sid = []
+        len = request.json['len']
+        for i in range(len):
+            sid.append(request.json['sid'][i])
 
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute("DELETE FROM schedule WHERE sid = %s" % ( sid))
-    mysql.connection.commit()
-    cursor.close()
-    return jsonify({'Result':'Delete Successfully'})
+        for i in range(len):
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute("DELETE FROM schedule WHERE sid = %s" % ( sid[i]))
+            mysql.connection.commit()
+            cursor.close()
+        return jsonify({'Result':'Delete Successfully'})
 
 #拍攝藥品辨識
 @app.route('/pred', methods=['POST','GET'])
@@ -139,8 +145,8 @@ def pred():
             cursor.execute('select * from drug where drug_permit_license = %s', (result[0][i],))
             temp =  cursor.fetchone()
             drug[temp['chName']] = result[1][i]
-            # sorted_drug = sorted(drug.items(), key=operator.itemgetter(1), reverse=True)
-        return jsonify(drug)
+            sorted_drug = sorted(drug.items(), key=operator.itemgetter(1), reverse=True)
+        return jsonify(sorted_drug)
     else:
         return jsonify({'Result':'Wrong request'})
 
@@ -150,4 +156,3 @@ def interaction():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
-    

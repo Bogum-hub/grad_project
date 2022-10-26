@@ -47,7 +47,3 @@ def get_pred(image_tensor):
         c[b[idx.item()]] = round(percentage[idx].item(),2)
         
     return list(c.keys()), list(c.values())
-
-    
-            
-            

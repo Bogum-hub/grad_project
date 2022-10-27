@@ -5,7 +5,7 @@ from torchvision import models,transforms
 
 model = models.resnet18(weights='ResNet18_Weights.DEFAULT')
 
-PATH = "path/model1011.pth"
+PATH = "model1011.pth"
 torch.save(model.state_dict(), PATH)
 model.eval()
 
@@ -31,7 +31,7 @@ def get_pred(image_tensor):
     # _, preds = torch.max(outputs, 1)
     # idx = preds.item()
     #依照index從list找出藥品
-    f = open('path/test1011.txt',encoding='utf-8', errors='ignore')
+    f = open('m1011.txt',encoding='utf-8', errors='ignore')
     a = f.read()
     a_list = a.split(',')
     b = list(a_list)

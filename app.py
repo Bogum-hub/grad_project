@@ -152,7 +152,7 @@ def pred():
 
 @app.route('/interaction', methods= ['GET', 'POST'])
 def interaction():
-    return 'hi!!!'
+    return 'hello!!'
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

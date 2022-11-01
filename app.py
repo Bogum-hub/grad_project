@@ -104,7 +104,6 @@ def create():
 @app.route('/search_schedule', methods =['GET', 'POST']) 
 def schedule():
     if request.method =='POST' and 'date' in request.json:
-        
         mid = session['id']
         date = request.json['date']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -153,9 +152,16 @@ def pred():
 @app.route('/interaction', methods= ['GET', 'POST'])
 def interaction():
     if request.method == 'POST' and 'drugA' in request.json and 'drugB' in request.json:
+
         drugA = request.json['drugA']
         drugB = request.json['drugB']
+
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('select drug_permit_license from drug where chName = %s', (drugA,))
+        drug1 = cursor.fetchone()
+        cursor.execute('select drug_permit_license from drug where chName = %s', (drugB,))
+        drug2 = cursor.fetchone()
+
         query =  """
         SELECT drugA.drug_bank_ingred AS drugA_main, drugB.drug_bank_ingred AS drugB_main 
         FROM ingredient AS drugA CROSS JOIN ingredient AS drugB
@@ -164,12 +170,16 @@ def interaction():
             FROM interaction
             WHERE (ingreA = drugA.drug_bank_ingred AND ingreB = drugB.drug_bank_ingred));
         """
-        cursor.execute(query, (drugA , drugB))
+        
+        cursor.execute(query, (drug1['drug_permit_license'] , drug2['drug_permit_license']))
         result = list(cursor.fetchall())
         if result:
             return json.dumps(result)
         else:
-            return jsonify({'Result':'no interaction!'})
+            return jsonify({'Result':"No interaction!"})
+            
+        
+        
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

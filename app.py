@@ -2,7 +2,6 @@ import json
 from flask import Flask, request, session, jsonify
 from flask_mysqldb import MySQL
 from flask_cors import CORS
-from pyparsing import And
 from drug import transform_image, get_pred
 import MySQLdb.cursors
 import operator

@@ -166,8 +166,10 @@ def interaction():
         """
         cursor.execute(query, (drugA , drugB))
         result = list(cursor.fetchall())
-
-        return json.dumps(result)
+        if result:
+            return json.dumps(result)
+        else:
+            return jsonify({'Result':'no interaction!'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

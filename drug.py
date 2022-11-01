@@ -5,7 +5,7 @@ from torchvision import models,transforms
 
 model = models.resnet18(weights='ResNet18_Weights.DEFAULT')
 
-PATH = "model1011.pth"
+PATH = "model1019_bs8.pth"
 torch.save(model.state_dict(), PATH)
 model.eval()
 

@@ -2,6 +2,7 @@ import json
 from flask import Flask, request, session, jsonify
 from flask_mysqldb import MySQL
 from flask_cors import CORS
+from pyparsing import And
 from drug import transform_image, get_pred
 import MySQLdb.cursors
 import operator
@@ -161,25 +162,29 @@ def interaction():
         drug1 = cursor.fetchone()
         cursor.execute('select drug_permit_license from drug where chName = %s', (drugB,))
         drug2 = cursor.fetchone()
+        
+        if drug1 != None and drug2 != None:
+            query =  """
+            SELECT drugA.drug_bank_ingred AS drugA_main, drugB.drug_bank_ingred AS drugB_main 
+            FROM ingredient AS drugA CROSS JOIN ingredient AS drugB
+            WHERE drugA.ingre_drug_permit_license = %s AND drugA.drug_bank_ingred <>'NA' AND drugB.ingre_drug_permit_license= %s AND drugB.drug_bank_ingred<>'NA' AND drugA.drug_bank_ingred
+            IN (SELECT ingreA 
+                FROM interaction
+                WHERE (ingreA = drugA.drug_bank_ingred AND ingreB = drugB.drug_bank_ingred));
+            """
+            cursor.execute(query, (drug1['drug_permit_license'] , drug2['drug_permit_license']))
+            result = list(cursor.fetchall())
+            if result:
+                return json.dumps(result)
+            else:
+                return jsonify({'Result':"No interaction!"})
+        elif drug1 == None and drug2 != None:
+            return jsonify({'Result': drugA + " not exit!"})
 
-        query =  """
-        SELECT drugA.drug_bank_ingred AS drugA_main, drugB.drug_bank_ingred AS drugB_main 
-        FROM ingredient AS drugA CROSS JOIN ingredient AS drugB
-        WHERE drugA.ingre_drug_permit_license = %s AND drugA.drug_bank_ingred <>'NA' AND drugB.ingre_drug_permit_license= %s AND drugB.drug_bank_ingred<>'NA' AND drugA.drug_bank_ingred
-        IN (SELECT ingreA 
-            FROM interaction
-            WHERE (ingreA = drugA.drug_bank_ingred AND ingreB = drugB.drug_bank_ingred));
-        """
-        
-        cursor.execute(query, (drug1['drug_permit_license'] , drug2['drug_permit_license']))
-        result = list(cursor.fetchall())
-        if result:
-            return json.dumps(result)
+        elif drug1 != None and drug2 == None:
+            return jsonify({'Result': drugB +" not exit!"})
         else:
-            return jsonify({'Result':"No interaction!"})
-            
-        
-        
+            return jsonify({'Result':drugA + " and " + drugB + "not exit!"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

@@ -15,7 +15,8 @@
 - [x] 編輯用藥時程
 - [X] 查詢用藥 enddate/start_date
 - [x] 取得會員資料的route
-- [ ] 藥品照片
+- [*] 藥品照片
+- [x] 會員資料更新
 
 ## Route說明
 #### 編輯用藥時程：
@@ -25,3 +26,7 @@ DATA needed: json={"sid", "drug", "startDate", "endDate", "duration", "daily", "
 #### 取得會員資料：
 route-/member_data/(id), request method-GET
 回傳：account, mid, password, name
+
+#### 取得會員資料：
+route-/member_update, request method-POST
+DATA needed: json={"name", "password"}

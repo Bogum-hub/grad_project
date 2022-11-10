@@ -44,7 +44,7 @@ def logout():
         return jsonify({'Result':'Logout sucessfully'})
 
 #註冊
-@app.route('/register', methods =['GET', 'POST', 'PUT'])
+@app.route('/register', methods =['GET', 'POST'])
 def register():
     if request.method == 'POST' and 'username' in request.form and 'account' in request.form and 'password' in request.form:
         username = request.form['username']
@@ -63,6 +63,23 @@ def register():
             return jsonify({'result':'sign up successfully'})
     else:
         return jsonify({'result':'sign up failed'})
+
+#更新會員資料
+@app.route('/member_update', methods =['GET', 'POST'])
+def member_update():
+    if request.method == 'POST' and 'name' in request.json and 'password' in request.json:
+        mid = session['id']
+        name = request.json['name']
+        password = request.json['password']
+        query = """
+        update member set name = %s , mPassword = %s where mId = %s;
+        """
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(query,(name, password, mid))
+        mysql.connection.commit()
+        return jsonify({'Result':'update successfully!'})
+    else:
+        return jsonify({'Result':'Something went wrong'})
 
 #取得會員資料
 @app.route('/member_data/<int:mid>')
@@ -87,16 +104,17 @@ def drug():
         drug = request.json['drug']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         query = """
-        SELECT * 
-        FROM drug 
-        WHERE enName = % s or chName = %s'
+        SELECT *
+        FROM drug as d, DrugImg as img
+        WHERE (enName = %s or chName = %s) and d.drug_permit_license = img.license
         """
         cursor.execute(query, (drug, drug,))
         result = cursor.fetchone()
         if result:
-            return jsonify({'Result': 'true', '中文名字': result['chName'], '英文名字':result['enName'], '劑型': result['type'], '形狀': result['shape'], '顏色': result['color'], '適應症' : result['indication']})
+            return jsonify({'中文名字': result['chName'], '英文名字':result['enName'], '劑型': result['type'], '形狀': result['shape'], '顏色': result['color'], '適應症' : result['indication'], '照片':result['link']})
         else:
             return jsonify({'Result': 'false'})
+
     return jsonify({'Result': 'Wrong request'})
 
 #新增用藥時程/編輯用藥時程

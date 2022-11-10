@@ -103,6 +103,8 @@ def drug():
     if request.method == 'POST' and 'drug' in request.json:
         drug = request.json['drug']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        
+        #照片存在的情況下
         query = """
         SELECT *
         FROM drug as d, DrugImg as img
@@ -112,8 +114,20 @@ def drug():
         result = cursor.fetchone()
         if result:
             return jsonify({'中文名字': result['chName'], '英文名字':result['enName'], '劑型': result['type'], '形狀': result['shape'], '顏色': result['color'], '適應症' : result['indication'], '照片':result['link']})
+        
+        #照片不存在的情況下
         else:
-            return jsonify({'Result': 'false'})
+            query = """
+            SELECT *
+            FROM drug as d, DrugImg as img
+            WHERE enName = %s or chName = %s
+            """
+            cursor.execute(query, (drug, drug,))
+            result = cursor.fetchone()
+            if result:
+                return jsonify({'中文名字': result['chName'], '英文名字':result['enName'], '劑型': result['type'], '形狀': result['shape'], '顏色': result['color'], '適應症' : result['indication'], '照片':'NA'})
+            else:
+                return jsonify({'Result': 'Drug does not exist!'})
 
     return jsonify({'Result': 'Wrong request'})
 

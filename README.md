@@ -27,6 +27,6 @@ DATA needed: json={"sid", "drug", "startDate", "endDate", "duration", "daily", "
 route-/member_data/(id), request method-GET
 回傳：account, mid, password, name
 
-#### 取得會員資料：
+#### 更新會員資料：
 route-/member_update, request method-POST
 DATA needed: json={"name", "password"}

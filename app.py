@@ -60,6 +60,22 @@ def register():
             return jsonify({'result':'sign up successfully'})
     else:
         return jsonify({'result':'sign up failed'})
+
+#取得會員資料
+@app.route('/member_data/<int:mid>')
+def member_data(mid):
+        id = str(mid)
+        query = """
+        select * from member where mid = %s;
+        """
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(query,(id,))
+        result = cursor.fetchone()
+        if result:
+            return jsonify({'Result': result})
+        else:
+            return jsonify({'Result': 'no'})
+
 #查詢藥物
 @app.route('/search_drug', methods =['GET', 'POST'])
 def drug():
@@ -127,7 +143,39 @@ def schedule_delete():
             mysql.connection.commit()
             cursor.close()    
         return jsonify({'Result':'Delete Successfully'})
+
+#更新用藥時程
+@app.route('/update_schedule', methods=['PUT'])
+def update_schdule():
+    
+    if request.method == 'PUT' and 'sid' in request.json and 'drug' in request.json and 'startDate' in request.json and 'endDate' in request.json and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json and 'bag' in request.json:
         
+        
+        drug_temp = request.json['drug'] 
+        cursor1 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor1.execute('select drugId from drug where chName=%s or enName=%s', (drug_temp, drug_temp))
+        drug = cursor1.fetchone()
+        
+        if drug:
+            sid = request.json.get('sid')
+            scheduleDrugId = drug['drugId']#先抓出使用者所輸入的藥品名稱
+            startDate = request.json['startDate'] #開始吃藥時間
+            endDate = request.json['endDate'] #結束吃藥時間
+            duration = request.json['duration'] #間隔時間
+            daily = request.json['daily'] #每天幾點吃
+            hint = request.json['hint'] #定時提醒
+            bag = request.json['bag'] #藥袋
+            query = """
+            UPDATE schedule set scheduledrugid = %s, startDate=%s, enddate=%s, duration=%s, daily=%s, bag=%s, ishint=%s
+            where sId = %s;
+            """
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute(query, (scheduleDrugId, startDate, endDate, duration, daily, bag, hint, sid, ))
+            mysql.connection.commit()
+            cursor.close()
+            return jsonify({'result': 'update successfully!'})
+    else:        
+        return jsonify({'result': 'update failed!'})
 
 #拍攝藥品辨識
 @app.route('/pred', methods=['POST','GET'])

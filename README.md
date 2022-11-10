@@ -11,9 +11,16 @@
 #### FLASK
 #### MYSQL
 
-## CHECK BOX
-- [x] 使用者登入、資料更新
-- [x] 藥品辨識
-- [x] 藥品查詢
-- [ ] 用藥時程表(dateadd)
-- [x] 交互作用查詢
+## CHECK BOX 11/09
+- [x] 編輯用藥時程
+- [ ] 查詢用藥 enddate/start_date
+- [x] 取得會員資料的route
+- [x] 藥品照片
+
+## Route說明
+#### 編輯用藥時程：
+route-/update_schedule, request method-PUT
+DATA needed: json={"sid", "drug", "startDate", "endDate", "duration", "daily", "bag", "hint"}
+#### 取得會員資料：
+route-/member_data/(id), request method-GET
+回傳：account, mid, password, name

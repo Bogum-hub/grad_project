@@ -18,6 +18,7 @@ app.config['MYSQL_DB'] = 'mydb'
 app.config['JSON_AS_ASCII'] = False
 
 mysql = MySQL(app)
+
 #登入
 @app.route('/login', methods =['GET', 'POST'])
 def login():
@@ -34,14 +35,16 @@ def login():
             #incorrect account / password
             return jsonify({'status':'Account not exists!'})
     return jsonify({'status':'Lack of info'})
+
 #登出
 @app.route('/logout', methods =['GET', 'POST'])
 def logout():
     if request.method == 'POST':
         session.pop('id', None)
         return jsonify({'Result':'Logout sucessfully'})
+
 #註冊
-@app.route('/register', methods =['GET', 'POST'])
+@app.route('/register', methods =['GET', 'POST', 'PUT'])
 def register():
     if request.method == 'POST' and 'username' in request.form and 'account' in request.form and 'password' in request.form:
         username = request.form['username']
@@ -64,17 +67,17 @@ def register():
 #取得會員資料
 @app.route('/member_data/<int:mid>')
 def member_data(mid):
-        id = str(mid)
-        query = """
-        select * from member where mid = %s;
-        """
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute(query,(id,))
-        result = cursor.fetchone()
-        if result:
-            return jsonify({'Result': result})
-        else:
-            return jsonify({'Result': 'no'})
+    id = str(mid)
+    query = """
+    select * from member where mid = %s;
+    """
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute(query,(id,))
+    result = cursor.fetchone()
+    if result:
+        return jsonify({'Result': result})
+    else:
+        return jsonify({'Result': 'no'})
 
 #查詢藥物
 @app.route('/search_drug', methods =['GET', 'POST'])
@@ -83,15 +86,21 @@ def drug():
     if request.method == 'POST' and 'drug' in request.json:
         drug = request.json['drug']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM drug WHERE enName = % s or chName = %s', (drug, drug,))
+        query = """
+        SELECT * 
+        FROM drug 
+        WHERE enName = % s or chName = %s'
+        """
+        cursor.execute(query, (drug, drug,))
         result = cursor.fetchone()
         if result:
             return jsonify({'Result': 'true', '中文名字': result['chName'], '英文名字':result['enName'], '劑型': result['type'], '形狀': result['shape'], '顏色': result['color'], '適應症' : result['indication']})
         else:
             return jsonify({'Result': 'false'})
     return jsonify({'Result': 'Wrong request'})
-#新增用藥時程
-@app.route('/create_schedule', methods =['GET', 'POST']) 
+
+#新增用藥時程/編輯用藥時程
+@app.route('/create_schedule', methods =['GET', 'POST', 'PUT']) 
 def create():
     if request.method == 'POST' and 'drug' in request.json and 'startDate' in request.json and 'endDate' in request.json and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json and 'bag' in request.json:
         
@@ -113,43 +122,9 @@ def create():
             mysql.connection.commit()
             return jsonify({'Result':' Schedule create successfully!'})
         else:
-            return jsonify({'Result':'Drug not exist!'})
-    else:
-        return jsonify({'Result': 'error!'})
-#查詢用藥時程
-@app.route('/search_schedule', methods =['GET', 'POST']) 
-def schedule():
-    if request.method =='POST' and 'date' in request.json:
-        mid = session['id']
-        date = request.json['date']
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('select sId, startdate, daily, bag, ishint, chname, enName from schedule, drug where startdate = %s and scheduleMid = %s and drug.drugId = scheduleDrugId' , (date, mid, ))
-        result = list(cursor.fetchall())
+            return jsonify({'Result':'Drug do not exist!'})
 
-        return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
-    else:
-        return jsonify({"Result":'Wrong Request'})
-
-#刪除用藥時程
-@app.route('/delete_schedule', methods=['POST','GET'])
-def schedule_delete():
-    if request.method == 'POST' and 'sid_list' in request.json:
-        
-        a = request.json['sid_list']
-
-        for i in range(len(a)):
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute("DELETE FROM schedule WHERE sid = %s" % ( a[i]))
-            mysql.connection.commit()
-            cursor.close()    
-        return jsonify({'Result':'Delete Successfully'})
-
-#更新用藥時程
-@app.route('/update_schedule', methods=['PUT'])
-def update_schdule():
-    
     if request.method == 'PUT' and 'sid' in request.json and 'drug' in request.json and 'startDate' in request.json and 'endDate' in request.json and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json and 'bag' in request.json:
-        
         
         drug_temp = request.json['drug'] 
         cursor1 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -174,8 +149,43 @@ def update_schdule():
             mysql.connection.commit()
             cursor.close()
             return jsonify({'result': 'update successfully!'})
-    else:        
-        return jsonify({'result': 'update failed!'})
+    else:
+        return jsonify({'Result': 'error!'})
+
+#查詢用藥時程
+@app.route('/search_schedule', methods =['GET', 'POST']) 
+def schedule():
+    if request.method =='POST' and 'date' in request.json:
+        mid = session['id']
+        date = request.json['date']
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        query = """
+        select sId, startdate, enddate, daily, bag, ishint, chname, enName, duration
+        from schedule, drug 
+        where startdate <= %s and enddate>= %s and scheduleMid = %s and drug.drugId = scheduleDrugId
+        """
+        cursor.execute(query , (date, date, mid, ))
+        result = list(cursor.fetchall())
+        if result:
+            return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
+        else:
+            return jsonify({'Result':'No record!'})
+    else:
+        return jsonify({"Result":'Wrong Request'})
+
+#刪除用藥時程
+@app.route('/delete_schedule', methods=['POST','GET'])
+def schedule_delete():
+    if request.method == 'POST' and 'sid_list' in request.json:
+        
+        a = request.json['sid_list']
+
+        for i in range(len(a)):
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute("DELETE FROM schedule WHERE sid = %s" % ( a[i]))
+            mysql.connection.commit()
+            cursor.close()    
+        return jsonify({'Result':'Delete Successfully'})
 
 #拍攝藥品辨識
 @app.route('/pred', methods=['POST','GET'])
@@ -196,6 +206,7 @@ def pred():
         return jsonify(sorted_drug)
     else:
         return jsonify({'Result':'Wrong request'})
+
 #交互作用
 @app.route('/interaction', methods= ['GET', 'POST'])
 def interaction():

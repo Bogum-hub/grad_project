@@ -230,24 +230,19 @@ def pred():
         drug = {}
         link = []
         for i in range(5):
+
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('select * from drug where drug_permit_license = %s ', (result[0][i],))
             temp = cursor.fetchone()
-            drug[temp['chName']] = result[1][i]
-            sorted_drug = sorted(drug.items(), key=operator.itemgetter(1), reverse=True)
-
-            cursor2 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor2.execute('select * from DrugImg where license = %s;', (result[0][i],))
-            temp2 = cursor2.fetchone()
+            cursor.execute('select * from DrugImg where license = %s;', (result[0][i],))
+            temp2 = cursor.fetchone()
             if temp2:
-                link.append(temp2['link'])
+                drug[temp['chName']] = result[1][i], temp2['link']
             else:
-                link.append('NA')
-
-        return jsonify(sorted_drug, link)
-
-        
-
+                drug[temp['chName']] = result[1][i], 'NA'
+            
+        sorted_drug = sorted(drug.items(), key=operator.itemgetter(1), reverse=True)
+        return jsonify(sorted_drug)
 
 #交互作用
 @app.route('/interaction', methods= ['GET', 'POST'])

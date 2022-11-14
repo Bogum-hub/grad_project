@@ -194,7 +194,7 @@ def schedule():
         query = """
         select sId, startdate, enddate, daily, bag, ishint, chname, enName, duration
         from schedule, drug 
-        where startdate <= %s and enddate>= %s and scheduleMid = %s and drug.drugId = scheduleDrugId
+        where startdate <= %s and enddate>= %s and scheduleMid = %s and drug.drugId = scheduleDrugId order by daily
         """
         cursor.execute(query , (date, date, mid, ))
         result = list(cursor.fetchall())
@@ -228,7 +228,6 @@ def pred():
         tensor = transform_image(img_byte)
         result = get_pred(tensor)
         drug = {}
-        link = []
         for i in range(5):
 
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -237,9 +236,9 @@ def pred():
             cursor.execute('select * from DrugImg where license = %s;', (result[0][i],))
             temp2 = cursor.fetchone()
             if temp2:
-                drug[temp['chName']] = result[1][i], temp2['link']
+                drug[temp['chName']] = (result[1][i], temp2['link'])
             else:
-                drug[temp['chName']] = result[1][i], 'NA'
+                drug[temp['chName']] = (result[1][i], 'NA')
             
         sorted_drug = sorted(drug.items(), key=operator.itemgetter(1), reverse=True)
         return jsonify(sorted_drug)

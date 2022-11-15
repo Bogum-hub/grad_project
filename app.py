@@ -82,41 +82,67 @@ def member_update():
         return jsonify({'Result':'Something went wrong'})
 
 #取得會員資料
-@app.route('/member_data/<int:mid>')
-def member_data(mid):
-    id = str(mid)
-    query = """
-    select * from member where mid = %s;
-    """
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute(query,(id,))
-    result = cursor.fetchone()
-    if result:
-        return jsonify({'Result': result})
+@app.route('/member_data')
+def member_data():
+    if request.method == "GET":
+        id = session['id']
+        query = """
+        select * from member where mid = %s;
+        """
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(query,(id,))
+        result = cursor.fetchone()
+        if result:
+            return jsonify({'Result': result})
+        else:
+            return jsonify({'Result': 'no'})
     else:
-        return jsonify({'Result': 'no'})
+        return jsonify({'Result': 'Wrong request'})
 
 #搜尋藥品字串比對
 @app.route('/search', methods =['GET', 'POST'])
 def search():
     if request.method == 'POST' and 'drug' in request.json:
-        drug = "%" + request.json['drug'] + "%"
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        query = """
-        SELECT *
-        FROM drug as d
-        WHERE enName LIKE %s or chName LIKE %s limit 10;
-        """
-        cursor.execute(query, (drug, drug,))
-        result = list(cursor.fetchall())
-        temp = []
-        for i in range(len(result)):
-            temp.append(result[i]['chName'])
-        if result:
-            return jsonify(temp)
-        else:
-            return jsonify({'result':'null'})
-
+        drug = request.json['drug']
+        
+        if drug.encode('UTF-8').isalpha() == True: #判斷使用者輸入英文
+            drug = str(request.json['drug'] + "%")
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            query = """
+            SELECT *
+            FROM drug 
+            GROUP BY enName
+            having enName LIKE %s limit 10
+            """
+            cursor.execute(query, (drug, ))
+            result = list(cursor.fetchall())
+            temp = []
+            for i in range(len(result)):
+                temp.append(result[i]['enName'])
+            if result:
+                return jsonify(temp)
+            else:
+                return jsonify({'result':'NA'})
+        
+        else: #判斷使用者輸入中文
+            drug = str("%" + request.json['drug'] + "%")# %中文%
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            query = """
+            SELECT *
+            FROM drug 
+            GROUP BY chName
+            having chName LIKE %s limit 10
+            """
+            cursor.execute(query, (drug, ))
+            result = list(cursor.fetchall())
+            temp = []
+            for i in range(len(result)):
+                temp.append(result[i]['chName'])
+            if result:
+                return jsonify(temp)
+            else:
+                return jsonify({'result':'NA'})
+        
 #查詢藥物
 @app.route('/search_drug', methods =['GET', 'POST'])
 def drug():

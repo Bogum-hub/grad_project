@@ -25,14 +25,14 @@ route-/create_schedule, request method-PUT
 DATA needed: json={"sid", "drug", "startDate", "endDate", "duration", "daily", "bag", "hint"}
 
 #### 取得會員資料：
-route-/member_data/(id), request method-GET
+route-/member_data, request method-GET (在已登入的情況下)
 回傳：account, mid, password, name
 
 #### 更新會員資料：
-route-/member_update, request method-POST
+route-/member_update, request method-POST (在已登入的情況下)
 DATA needed: json={"name", "password"}
 
 #### 藥品提示搜尋：
 route-/search, request method-POST
 DATA needed: json={"drug"}
-備註：目前是回傳10筆 LIKE %drug% 的結果，可進一步討論
+回傳：至多10筆 LIKE drug%(英文) OR %drug%(中文)的結果

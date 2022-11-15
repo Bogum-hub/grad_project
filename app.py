@@ -142,6 +142,8 @@ def search():
                 return jsonify(temp)
             else:
                 return jsonify({'result':'NA'})
+    else:
+        return jsonify({'result':'something wrong'})
         
 #查詢藥物
 @app.route('/search_drug', methods =['GET', 'POST'])

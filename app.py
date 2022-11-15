@@ -96,6 +96,27 @@ def member_data(mid):
     else:
         return jsonify({'Result': 'no'})
 
+#搜尋藥品字串比對
+@app.route('/search', methods =['GET', 'POST'])
+def search():
+    if request.method == 'POST' and 'drug' in request.json:
+        drug = "%" + request.json['drug'] + "%"
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        query = """
+        SELECT *
+        FROM drug as d
+        WHERE enName LIKE %s or chName LIKE %s limit 10;
+        """
+        cursor.execute(query, (drug, drug,))
+        result = list(cursor.fetchall())
+        temp = []
+        for i in range(len(result)):
+            temp.append(result[i]['chName'])
+        if result:
+            return jsonify(temp)
+        else:
+            return jsonify({'result':'null'})
+
 #查詢藥物
 @app.route('/search_drug', methods =['GET', 'POST'])
 def drug():

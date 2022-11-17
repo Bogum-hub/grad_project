@@ -104,7 +104,8 @@ def member_data():
 def search():
     if request.method == 'POST' and 'drug' in request.json:
         drug = request.json['drug']
-        
+        if drug == '':
+            return jsonify({'result':'NA'})
         if drug.encode('UTF-8').isalpha() == True: #判斷使用者輸入英文
             drug = str(request.json['drug'] + "%")
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -237,22 +238,80 @@ def create():
 @app.route('/search_schedule', methods =['GET', 'POST']) 
 def schedule():
     if request.method =='POST' and 'date' in request.json:
-        mid = session['id']
         date = request.json['date']
+        mon = request.json['mon']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         query = """
-        select sId, startdate, enddate, daily, bag, ishint, chname, enName, duration
-        from schedule, drug 
-        where startdate <= %s and enddate>= %s and scheduleMid = %s and drug.drugId = scheduleDrugId order by daily
+        select bag, startdate, enddate, scheduleMid, extract(day from startdate) as start, extract(day from enddate) as end, 
+        (	case
+            when extract(YEAR_month from startdate) = %s then 'start'
+            when extract(YEAR_month from enddate) = %s then 'end'
+            else 'yes'
+            END) AS if_all_month
+        from schedule 
+        where scheduleMid=9
+        group by bag
+        HAVING extract(YEAR_month from startdate) <= %s AND %s <= extract(YEAR_month from enddate) ;
         """
-        cursor.execute(query , (date, date, mid, ))
-        result = list(cursor.fetchall())
+        cursor.execute(query, (date, date, date, date,))
+        result = cursor.fetchall()
+        a = {}
+        for i in range(len(result)):
+            a['bag'] = result[i]['bag']
+            a['date'] = []
+            a['month'] = mon
+            b = []
+            #起始月
+            if(result[i]['if_all_month'] == 'start'):
+                a['status'] = 'start month of schedule'
+                match mon:
+                    case 1|3|5|7|8|10|12:
+                        treshold = 31
+                    case 4|6|9|11:
+                        treshold = 30
+                    case _:
+                        treshold = 28
+                for i in range(result[i]['end'], treshold+1):
+                    b.append(i)
+                a['date'] = b
+            #結束月
+            elif(result[i]['if_all_month'] == 'end'):
+                a['status'] = 'end month of schedule'
+                for i in range(result[i]['end']):
+                    b.append(i+1)
+                a['date'] = b
+            #之間
+            else:
+                a['status'] = 'all'
+                match mon:
+                    case 1|3|5|7|8|10|12:
+                        a['date'] = 31
+                    case 4|6|9|11:
+                        a['date'] = 30
+                    case _:
+                        a['date'] = 28
         if result:
-            return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
+            return a
         else:
             return jsonify({'Result':'No record!'})
-    else:
-        return jsonify({"Result":'Wrong Request'})
+
+    # if request.method =='POST' and 'date' in request.json:
+    #     mid = session['id']
+    #     date = request.json['date']
+    #     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    #     query = """
+    #     select sId, startdate, enddate, daily, bag, ishint, chname, enName, duration
+    #     from schedule, drug 
+    #     where startdate <= %s and enddate>= %s and scheduleMid = %s and drug.drugId = scheduleDrugId order by daily
+    #     """
+    #     cursor.execute(query , (date, date, mid, ))
+    #     result = list(cursor.fetchall())
+    #     if result:
+    #         return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
+    #     else:
+    #         return jsonify({'Result':'No record!'})
+    # else:
+    #     return jsonify({"Result":'Wrong Request'})
 
 #刪除用藥時程
 @app.route('/delete_schedule', methods=['POST','GET'])

@@ -296,7 +296,7 @@ def schedule():
     #         return jsonify({'Result':'No record!'})
 
     if request.method =='POST' and 'date' in request.json:
-        mid = 9
+        mid = session['id']
         date = request.json['date']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         query = """

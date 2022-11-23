@@ -103,46 +103,34 @@ def member_data():
 @app.route('/search', methods =['GET', 'POST'])
 def search():
     if request.method == 'POST' and 'drug' in request.json:
-        drug = request.json['drug']
-        if drug == '':
+
+        drug = str(request.json['drug'])
+        if (drug.rstrip() == ''):
             return jsonify({'result':'NA'})
-        if drug.encode('UTF-8').isalpha() == True: #判斷使用者輸入英文
-            drug = str(request.json['drug'] + "%")
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            query = """
-            SELECT *
-            FROM drug 
-            GROUP BY enName
-            having enName LIKE %s limit 10
-            """
-            cursor.execute(query, (drug, ))
-            result = list(cursor.fetchall())
-            temp = []
-            for i in range(len(result)):
-                temp.append(result[i]['enName'])
-            if result:
-                return jsonify(temp)
-            else:
-                return jsonify({'result':'NA'})
+
+        drug_EN = str(request.json['drug'] + "%")
+        drug_CH = str("%" + request.json['drug'] + "%")
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        query = """
+        SELECT *
+        FROM drug 
+        GROUP BY enName
+        having enName LIKE %s OR chName LIKE %s limit 10
+        """
+        cursor.execute(query, (drug_EN, drug_CH, ))
+        result = list(cursor.fetchall())
+        temp = []
         
-        else: #判斷使用者輸入中文
-            drug = str("%" + request.json['drug'] + "%")# %中文%
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            query = """
-            SELECT *
-            FROM drug 
-            GROUP BY chName
-            having chName LIKE %s limit 10
-            """
-            cursor.execute(query, (drug, ))
-            result = list(cursor.fetchall())
-            temp = []
+        if result:
             for i in range(len(result)):
-                temp.append(result[i]['chName'])
-            if result:
-                return jsonify(temp)
-            else:
-                return jsonify({'result':'NA'})
+                if(drug.replace(" ","").encode('utf-8').isalpha() == True):
+                    temp.append(result[i]['enName'])
+                else:
+                    temp.append(result[i]['chName'])
+            return jsonify(temp)
+        else:
+            return jsonify({'result':'NA'})
+
     else:
         return jsonify({'result':'something wrong'})
         

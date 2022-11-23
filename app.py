@@ -237,64 +237,6 @@ def create():
 #查詢用藥時程
 @app.route('/search_schedule', methods =['GET', 'POST']) 
 def schedule():
-    # if request.method =='POST' and 'date' in request.json:
-    #     date = request.json['date']
-    #     mon = request.json['mon']
-    #     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    #     query = """
-    #     select bag, startdate, enddate, scheduleMid, extract(day from startdate) as start, extract(day from enddate) as end, 
-    #     (	case
-    #         when extract(YEAR_month from startdate) = %s then 'start'
-    #         when extract(YEAR_month from enddate) = %s then 'end'
-    #         else 'yes'
-    #         END) AS if_all_month
-    #     from schedule 
-    #     where scheduleMid=9
-    #     group by bag
-    #     HAVING extract(YEAR_month from startdate) <= %s AND %s <= extract(YEAR_month from enddate) ;
-    #     """
-    #     cursor.execute(query, (date, date, date, date,))
-    #     result = cursor.fetchall()
-    #     a = {}
-    #     for i in range(len(result)):
-    #         a['bag'] = result[i]['bag']
-    #         a['date'] = []
-    #         a['month'] = mon
-    #         b = []
-    #         #起始月
-    #         if(result[i]['if_all_month'] == 'start'):
-    #             a['status'] = 'start month of schedule'
-    #             match mon:
-    #                 case 1|3|5|7|8|10|12:
-    #                     treshold = 31
-    #                 case 4|6|9|11:
-    #                     treshold = 30
-    #                 case _:
-    #                     treshold = 28
-    #             for i in range(result[i]['end'], treshold+1):
-    #                 b.append(i)
-    #             a['date'] = b
-    #         #結束月
-    #         elif(result[i]['if_all_month'] == 'end'):
-    #             a['status'] = 'end month of schedule'
-    #             for i in range(result[i]['end']):
-    #                 b.append(i+1)
-    #             a['date'] = b
-    #         #之間
-    #         else:
-    #             a['status'] = 'all'
-    #             match mon:
-    #                 case 1|3|5|7|8|10|12:
-    #                     a['date'] = 31
-    #                 case 4|6|9|11:
-    #                     a['date'] = 30
-    #                 case _:
-    #                     a['date'] = 28
-    #     if result:
-    #         return a
-    #     else:
-    #         return jsonify({'Result':'No record!'})
-
     if request.method =='POST' and 'date' in request.json:
         mid = session['id']
         date = request.json['date']
@@ -312,6 +254,84 @@ def schedule():
             return jsonify({'Result':'No record!'})
     else:
         return jsonify({"Result":'Wrong Request'})
+
+#查詢用藥時程
+@app.route('/search_schedule_mon', methods =['GET', 'POST']) 
+def schedule_mon():
+    if request.method =='POST' and 'date' in request.json:
+        mid = session['id']
+        date = request.json['date']
+        mon = request.json['mon']
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        query = """
+        select bag, startdate, enddate, scheduleMid, extract(day from startdate) as start, extract(day from enddate) as end, extract(day from startdate) as start_end,
+        (	case
+            when extract(YEAR_month from enddate) = extract(YEAR_month from startdate) then 'start_end'
+            when extract(YEAR_month from startdate) = %s then 'start'
+            when extract(YEAR_month from enddate) = %s then 'end'
+            else 'yes'
+            END) AS if_all_month
+        from schedule 
+        where scheduleMid=%s
+        GROUP BY bag
+        HAVING extract(YEAR_month from startdate) <= %s AND %s <= extract(YEAR_month from enddate) 
+        ORDER BY bag;
+        """
+        cursor.execute(query, (date, date, mid, date, date,))
+        result = cursor.fetchall()
+        c = []
+
+        for i in range(len(result)):
+            a = {}
+            a['bag'] = result[i]['bag']
+            a['date'] = []
+            a['month'] = mon
+            b = []
+
+            #起始月=結束月
+            if(result[i]['if_all_month'] == 'start_end'):
+                a['status'] = 'in a month'
+                for i in range(result[i]['start'], result[i]['end']+1):
+                    b.append(i)
+                a['date'] = b
+
+            #起始月
+            elif(result[i]['if_all_month'] == 'start'):
+                a['status'] = 'start month of schedule'
+                match mon:
+                    case 1|3|5|7|8|10|12:
+                        treshold = 31
+                    case 4|6|9|11:
+                        treshold = 30
+                    case _:
+                        treshold = 28
+                for i in range(result[i]['start'], treshold+1):
+                    b.append(i)
+                a['date'] = b
+
+            #結束月
+            elif(result[i]['if_all_month'] == 'end'):
+                a['status'] = 'end month of schedule'
+                for i in range(result[i]['end']):
+                    b.append(i+1)
+                a['date'] = b
+                
+            #之間
+            else:
+                a['status'] = 'all'
+                match mon:
+                    case 1|3|5|7|8|10|12:
+                        a['date'] = 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+                    case 4|6|9|11:
+                        a['date'] = 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
+                    case _:
+                        a['date'] = 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28
+            c.append(a)
+
+        if result:
+            return jsonify({'Result':c})
+        else:
+            return jsonify({'Result':'No record!'})
 
 #刪除用藥時程
 @app.route('/delete_schedule', methods=['POST','GET'])

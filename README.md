@@ -12,7 +12,7 @@
 #### MYSQL
 
 ## CHECK BOX 11/16
-- [ ] 依照輸入的年月分回傳用藥時程表的日期(藥袋不重複)
+- [x] 依照輸入的年月分回傳用藥時程表的日期(藥袋不重複)
 - [ ] 新增過敏資訊的table
 
 
@@ -33,3 +33,9 @@ DATA needed: json={"name", "password"}
 route-/search, request method-POST
 DATA needed: json={"drug"}
 回傳：至多10筆 LIKE drug%(英文) OR %drug%(中文)的結果
+
+#### 查詢用藥時程(for月份)
+route-/search_schedule_mon, request method-POST
+DATA needed: json={"date", "mon"}
+***請注意：date請給年份月份，如2022年12月，則為{"date":"202212", "mon":12} (date為string, mon為integer)
+***藥袋起始日期必須相同，功能才正常

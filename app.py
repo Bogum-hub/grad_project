@@ -50,6 +50,7 @@ def register():
         username = request.form['username']
         account = request.form['account']
         password = request.form['password']
+        
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('Select * FROM member WHERE mAccount = %s', (account, ))
         account_check = cursor.fetchone()
@@ -60,8 +61,30 @@ def register():
         else:
             cursor.execute('Insert into member(name, maccount, mpassword) values(%s, %s, %s)', (username, request.form['account'], password,))
             mysql.connection.commit()
-            return jsonify({'result':'sign up successfully'})
-    else:
+            #有輸入藥品過敏資訊
+            if 'allergy' in request.form:
+                #先找出使用者id&藥品id
+                cursor.execute('select mId from member where maccount = %s;', (request.form['account'], ))
+                result = cursor.fetchone()
+                mid = result['mId']
+                allergy = request.form['allergy']
+                query = """
+                select drugId from drug where enName = %s or chName = %s;
+                """
+                cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                cursor.execute(query, (allergy, allergy,))
+                result = cursor.fetchone()
+                drugid = result['drugId']
+                #找出id後新增至allergy table
+                query2 = """
+                insert into allergy (allergyMid, allergyDrugId) values (%s, %s);
+                """
+                cursor.execute(query2, (mid, drugid, ))
+                mysql.connection.commit()
+                return jsonify({'result': '新增帳號&過敏資訊成功'})
+            else:
+                return jsonify({'result': '新增帳號成功'})
+    else:   
         return jsonify({'result':'sign up failed'})
 
 #更新會員資料
@@ -139,8 +162,20 @@ def search():
 def drug():
     result = ''
     if request.method == 'POST' and 'drug' in request.json:
+        mid = 31
         drug = request.json['drug']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        query1 = """
+        select chName, enName
+        from allergy, drug, member
+        where allergyMid=%s and allergyMid = mid and chName = %s and allergyDrugId = drugid;
+        """
+        cursor.execute(query1, (mid, drug,))
+        allergy = cursor.fetchone()
+        if allergy != None:
+            a = '是'
+        else:
+            a = '否'
         
         #照片存在的情況下
         query = """
@@ -151,7 +186,7 @@ def drug():
         cursor.execute(query, (drug, drug,))
         result = cursor.fetchone()
         if result:
-            return jsonify({'中文名字': result['chName'], '英文名字':result['enName'], '劑型': result['type'], '形狀': result['shape'], '顏色': result['color'], '適應症' : result['indication'], '照片':result['link']})
+            return jsonify({'中文名字': result['chName'], '英文名字':result['enName'], '劑型': result['type'], '形狀': result['shape'], '顏色': result['color'], '適應症' : result['indication'], '照片':result['link'], '是否過敏':a})
         
         #照片不存在的情況下
         else:
@@ -163,7 +198,7 @@ def drug():
             cursor.execute(query, (drug, drug,))
             result = cursor.fetchone()
             if result:
-                return jsonify({'中文名字': result['chName'], '英文名字':result['enName'], '劑型': result['type'], '形狀': result['shape'], '顏色': result['color'], '適應症' : result['indication'], '照片':'NA'})
+                return jsonify({'中文名字': result['chName'], '英文名字':result['enName'], '劑型': result['type'], '形狀': result['shape'], '顏色': result['color'], '適應症' : result['indication'], '照片':'NA', '是否過敏':a})
             else:
                 return jsonify({'Result': 'Drug does not exist!'})
 

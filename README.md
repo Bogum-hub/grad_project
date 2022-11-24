@@ -39,3 +39,8 @@ route-/search_schedule_mon, request method-POST
 DATA needed: json={"date", "mon"}
 ***請注意：date請給年份月份，如2022年12月，則為{"date":"202212", "mon":12} (date為string, mon為integer)
 ***藥袋起始日期必須相同，功能才正常
+
+#### 新增過敏資訊(在register裡面)
+route-/register, request method-POST
+DATA needed: json={"username", "account", "password", "allergy"(optional)}
+***allergy可填可不填，若為空白，則回傳"username", "account", "password"三者即可(也不需回傳空字串/NA等資訊...)

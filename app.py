@@ -46,46 +46,48 @@ def logout():
 #註冊
 @app.route('/register', methods =['GET', 'POST'])
 def register():
-    if request.method == 'POST' and 'username' in request.form and 'account' in request.form and 'password' in request.form:
-        username = request.form['username']
-        account = request.form['account']
-        password = request.form['password']
+    allergy = request.form['allergy']
+    return allergy
+    # if request.method == 'POST' and 'username' in request.form and 'account' in request.form and 'password' in request.form:
+    #     username = request.form['username']
+    #     account = request.form['account']
+    #     password = request.form['password']
         
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('Select * FROM member WHERE mAccount = %s', (account, ))
-        account_check = cursor.fetchone()
-        if account_check:
-            return jsonify({'result':'Account already exist!'})
-        elif not username or not password:
-            return jsonify({'result':'Please fill out the form!'})
-        else:
-            cursor.execute('Insert into member(name, maccount, mpassword) values(%s, %s, %s)', (username, request.form['account'], password,))
-            mysql.connection.commit()
-            #有輸入藥品過敏資訊
-            if 'allergy' in request.form:
-                #先找出使用者id&藥品id
-                cursor.execute('select mId from member where maccount = %s;', (request.form['account'], ))
-                result = cursor.fetchone()
-                mid = result['mId']
-                allergy = request.form['allergy']
-                query = """
-                select drugId from drug where enName = %s or chName = %s;
-                """
-                cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-                cursor.execute(query, (allergy, allergy,))
-                result = cursor.fetchone()
-                drugid = result['drugId']
-                #找出id後新增至allergy table
-                query2 = """
-                insert into allergy (allergyMid, allergyDrugId) values (%s, %s);
-                """
-                cursor.execute(query2, (mid, drugid, ))
-                mysql.connection.commit()
-                return jsonify({'result': '新增帳號&過敏資訊成功'})
-            else:
-                return jsonify({'result': '新增帳號成功'})
-    else:   
-        return jsonify({'result':'sign up failed'})
+    #     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    #     cursor.execute('Select * FROM member WHERE mAccount = %s', (account, ))
+    #     account_check = cursor.fetchone()
+    #     if account_check:
+    #         return jsonify({'result':'Account already exist!'})
+    #     elif not username or not password:
+    #         return jsonify({'result':'Please fill out the form!'})
+    #     else:
+    #         cursor.execute('Insert into member(name, maccount, mpassword) values(%s, %s, %s)', (username, request.form['account'], password,))
+    #         mysql.connection.commit()
+    #         #有輸入藥品過敏資訊
+    #         if 'allergy' in request.form:
+    #             #先找出使用者id&藥品id
+    #             cursor.execute('select mId from member where maccount = %s;', (request.form['account'], ))
+    #             result = cursor.fetchone()
+    #             mid = result['mId']
+    #             allergy = request.form['allergy']
+    #             query = """
+    #             select drugId from drug where enName = %s or chName = %s;
+    #             """
+    #             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    #             cursor.execute(query, (allergy, allergy,))
+    #             result = cursor.fetchone()
+    #             drugid = result['drugId']
+    #             #找出id後新增至allergy table
+    #             query2 = """
+    #             insert into allergy (allergyMid, allergyDrugId) values (%s, %s);
+    #             """
+    #             cursor.execute(query2, (mid, drugid, ))
+    #             mysql.connection.commit()
+    #             return jsonify({'result': '新增帳號&過敏資訊成功'})
+    #         else:
+    #             return jsonify({'result': '新增帳號成功'})
+    # else:   
+    #     return jsonify({'result':'sign up failed'})
 
 #更新會員資料
 @app.route('/member_update', methods =['GET', 'POST'])
@@ -378,9 +380,9 @@ def pred():
         img_byte = file.read()
         tensor = transform_image(img_byte)
         result = get_pred(tensor)
+        
         drug = {}
         for i in range(5):
-
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute('select * from drug where drug_permit_license = %s ', (result[0][i],))
             temp = cursor.fetchone()

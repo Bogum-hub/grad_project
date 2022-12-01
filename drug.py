@@ -7,9 +7,9 @@ m = models.resnet18()
 num_ftrs = m.fc.in_features
 m.fc = torch.nn.Linear(num_ftrs, 380)
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 m.load_state_dict(torch.load('test.pth', map_location=torch.device('cpu')))
-
-m = m.to('cuda:0')
+m = m.to(device)
 m.eval()
 
 # image -> tensor

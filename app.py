@@ -382,19 +382,23 @@ def pred():
         result = get_pred(tensor)
         
         drug = {}
-        for i in range(5):
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute('select * from drug where drug_permit_license = %s ', (result[0][i],))
-            temp = cursor.fetchone()
-            cursor.execute('select * from DrugImg where license = %s;', (result[0][i],))
-            temp2 = cursor.fetchone()
-            if temp2:
-                drug[temp['chName']] = (result[1][i], temp2['link'])
-            else:
-                drug[temp['chName']] = (result[1][i], 'NA')
+        if result:
+            for i in range(5):
+                cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                cursor.execute('select * from drug where drug_permit_license = %s ', (result[0][i],))
+                temp = cursor.fetchone()
+                cursor.execute('select * from DrugImg where license = %s;', (result[0][i],))
+                temp2 = cursor.fetchone()
+                if temp2:
+                    drug[temp['chName']] = (result[1][i], temp2['link'])
+                else:
+                    pass
             
-        sorted_drug = sorted(drug.items(), key=operator.itemgetter(1), reverse=True)
-        return jsonify(sorted_drug)
+            sorted_drug = sorted(drug.items(), key=operator.itemgetter(1), reverse=True)
+            return jsonify(sorted_drug)
+        else:
+            return jsonify({"result":"drug not exists!"})
+        
 
 #交互作用
 @app.route('/interaction', methods= ['GET', 'POST'])

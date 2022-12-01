@@ -34,7 +34,7 @@ def get_pred(image_tensor):
     b = list(a_list)
     f.close()
 
-    image_tensor = image_tensor.to('cuda:0')
+    image_tensor = image_tensor.to(device)
     outputs = m(image_tensor)
     percentage = torch.nn.functional.softmax(outputs, dim = 1)[0] * 100
     _, test_indices = torch.sort(outputs, descending = True)

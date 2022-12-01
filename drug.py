@@ -4,16 +4,14 @@ from PIL import Image
 from torchvision import models,transforms
 
 model = models.resnet18(weights='ResNet18_Weights.DEFAULT')
-
 PATH = "model1019_bs8.pth"
-torch.save(model.state_dict(), PATH)
+model.load_state_dict(torch.load(PATH))
 model.eval()
 
 # image -> tensor
 def transform_image(image_bytes):
     transform = transforms.Compose([
-                                    transforms.Resize(256),
-                                    transforms.CenterCrop(224),
+                                    transforms.Resize(224),
                                     transforms.ToTensor(),
                                     transforms.Normalize(
                                         mean = [0.485, 0.456, 0.406],

@@ -410,17 +410,16 @@ def interaction():
         
         if drug1 != None and drug2 != None:
             query =  """
-            SELECT drugA.drug_bank_ingred AS drugA_main, drugB.drug_bank_ingred AS drugB_main 
-            FROM ingredient AS drugA CROSS JOIN ingredient AS drugB
-            WHERE drugA.ingre_drug_permit_license = %s AND drugA.drug_bank_ingred <>'NA' AND drugB.ingre_drug_permit_license= %s AND drugB.drug_bank_ingred<>'NA' AND drugA.drug_bank_ingred
-            IN (SELECT ingreA 
-                FROM interaction
-                WHERE (ingreA = drugA.drug_bank_ingred AND ingreB = drugB.drug_bank_ingred));
+            SELECT ingreA, ingreB, description 
+            FROM interaction 
+            WHERE 
+            ingreA IN (SELECT drug_bank_ingred FROM ingredient WHERE ingre_drug_permit_license= %s) AND 
+            ingreB IN (SELECT drug_bank_ingred FROM ingredient WHERE ingre_drug_permit_license= %s);
             """
             cursor.execute(query, (drug1['drug_permit_license'] , drug2['drug_permit_license']))
             result = list(cursor.fetchall())
             if result:
-                return json.dumps(result)
+                return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
             else:
                 return jsonify({'Result':"No interaction!"})
         elif drug1 == None and drug2 != None:

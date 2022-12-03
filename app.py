@@ -11,7 +11,7 @@ CORS(app)
 
 app.secret_key = 'xxxx'
 
-app.config['MYSQL_HOST'] = 'drug-back-1124.cwvau6dpzkxj.ap-northeast-1.rds.amazonaws.com'
+app.config['MYSQL_HOST'] = 'drug-1203.cwvau6dpzkxj.ap-northeast-1.rds.amazonaws.com'
 app.config['MYSQL_USER'] = 'admin'
 app.config['MYSQL_PASSWORD'] = '12345678'
 app.config['MYSQL_DB'] = 'mydb'

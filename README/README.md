@@ -12,8 +12,7 @@
 #### MYSQL
 
 ## CHECK BOX 11/16
-- [ ] {['day':'藥袋A、藥袋B']}
-- [ ] 過敏array
+- [x] 過敏array
 
 ## Route說明
 #### 編輯用藥時程：
@@ -43,3 +42,12 @@ DATA needed: json={"date", "mon"}
 route-/register, request method-POST
 DATA needed: json={"username", "account", "password", "allergy"(optional)}
 ***allergy可填可不填，若為空白，則回傳"username", "account", "password"三者即可(也不需回傳空字串/NA等資訊...)
+
+#### 有關過敏藥物多值(註冊、修改)
+透過 EX:{'allergy':['綠油精', '暈速寧片']} 方式，請記得要先透過藥物查詢(route:search_drug)才能確保藥物名稱存在。若沒有過敏藥物則留空list ex:{'allergy':[]} 即可。
+
+#### 新增用藥時程判斷startdate, enddate, daliy是否合法
+若日期不合法："result": "Wrong Date format！" / 若時間不合法"result": "Wrong Daily format！"
+
+#### GET使用者schedule
+route-/search_schedule, request method-GET

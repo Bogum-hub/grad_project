@@ -1,4 +1,5 @@
 import json
+from datetime import *
 from flask import Flask, request, session, jsonify
 from flask_mysqldb import MySQL
 from flask_cors import CORS
@@ -11,8 +12,8 @@ CORS(app)
 
 app.secret_key = 'xxxx'
 
-app.config['MYSQL_HOST'] = 'drug-1203.cwvau6dpzkxj.ap-northeast-1.rds.amazonaws.com'
-app.config['MYSQL_USER'] = 'admin'
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = '12345678'
 app.config['MYSQL_DB'] = 'mydb'
 app.config['JSON_AS_ASCII'] = False
@@ -46,11 +47,10 @@ def logout():
 #註冊
 @app.route('/register', methods =['GET', 'POST'])
 def register():
-    
-    if request.method == 'POST' and 'username' in request.form and 'account' in request.form and 'password' in request.form:
-        username = request.form['username']
-        account = request.form['account']
-        password = request.form['password']
+    if request.method == 'POST' and 'username' in request.json and 'account' in request.json and 'password' in request.json:
+        username = request.json['username']
+        account = request.json['account']
+        password = request.json['password']
         
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('Select * FROM member WHERE mAccount = %s', (account, ))
@@ -60,28 +60,28 @@ def register():
         elif not username or not password:
             return jsonify({'result':'Please fill out the form!'})
         else:
-            cursor.execute('Insert into member(name, maccount, mpassword) values(%s, %s, %s)', (username, request.form['account'], password,))
+            cursor.execute('Insert into member(name, maccount, mpassword) values(%s, %s, %s)', (username, request.json['account'], password,))
             mysql.connection.commit()
             #有輸入藥品過敏資訊
-            if 'allergy' in request.form:
+            if request.json['allergy'] != []:
                 #先找出使用者id&藥品id
-                cursor.execute('select mId from member where maccount = %s;', (request.form['account'], ))
+                cursor.execute('select mId from member where maccount = %s;', (request.json['account'], ))
                 result = cursor.fetchone()
-                mid = result['mId']
-                allergy = request.form['allergy']
-                query = """
-                select drugId from drug where enName = %s or chName = %s;
-                """
-                cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-                cursor.execute(query, (allergy, allergy,))
-                result = cursor.fetchone()
-                drugid = result['drugId']
-                #找出id後新增至allergy table
-                query2 = """
-                insert into allergy (allergyMid, allergyDrugId) values (%s, %s);
-                """
-                cursor.execute(query2, (mid, drugid, ))
-                mysql.connection.commit()
+                mid = result['mId'] #記錄使用者id
+                for i in range(len(request.json['allergy'])):
+                    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                    query = """
+                    select drugId from drug where enName = %s or chName = %s;
+                    """
+                    cursor.execute(query, (request.json['allergy'][i], request.json['allergy'][i],))
+                    result = cursor.fetchone()
+                    drugid = result['drugId']
+                    #找出id後新增至allergy table
+                    query2 = """
+                    insert into allergy (allergyMid, allergyDrugId) values (%s, %s);
+                    """
+                    cursor.execute(query2, (mid, drugid, ))
+                    mysql.connection.commit()
                 return jsonify({'result': '新增帳號&過敏資訊成功'})
             else:
                 return jsonify({'result': '新增帳號成功'})
@@ -91,7 +91,7 @@ def register():
 #更新會員資料
 @app.route('/member_update', methods =['GET', 'POST'])
 def member_update():
-    if request.method == 'POST' and 'name' in request.json and 'password' in request.json:
+    if request.method == 'POST' and 'name' in request.json and 'password' in request.json and 'allergy'in request.json:
         mid = session['id']
         name = request.json['name']
         password = request.json['password']
@@ -101,6 +101,28 @@ def member_update():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(query,(name, password, mid))
         mysql.connection.commit()
+        
+        #先刪除過敏藥物
+        query2 = """
+        delete from allergy where allergyMid = %s
+        """
+        cursor.execute(query2,(mid,))
+        mysql.connection.commit()
+        #再插入過敏藥物
+        for i in range(len(request.json['allergy'])):
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            query = """
+            select drugId from drug where enName = %s or chName = %s;
+            """
+            cursor.execute(query, (request.json['allergy'][i], request.json['allergy'][i],))
+            result = cursor.fetchone()
+            drugid = result['drugId']
+            #找出id後新增至allergy table
+            query2 = """
+            insert into allergy (allergyMid, allergyDrugId) values (%s, %s);
+            """
+            cursor.execute(query2, (mid, drugid, ))
+            mysql.connection.commit()
         return jsonify({'Result':'update successfully!'})
     else:
         return jsonify({'Result':'Something went wrong'})
@@ -110,14 +132,25 @@ def member_update():
 def member_data():
     if request.method == "GET":
         id = session['id']
-        query = """
+        query ="""
         select * from member where mid = %s;
         """
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(query,(id,))
         result = cursor.fetchone()
+        query1 = """
+        select mId, name, mAccount, mPassword, chName, enName 
+        from member, allergy, drug
+        where mid = %s and allergyMid = %s AND drugId = allergyDrugId;
+        """
+        cursor.execute(query1,(id, id))
+        result1 = cursor.fetchall()
+        allergy = []
+        if result1:
+            for i in range(len(result1)):
+                allergy.append(result1[i]['chName'])
         if result:
-            return jsonify({'Result': result})
+            return jsonify({'Result': result, 'allergy':allergy})
         else:
             return jsonify({'Result': 'no'})
     else:
@@ -163,7 +196,7 @@ def search():
 def drug():
     result = ''
     if request.method == 'POST' and 'drug' in request.json:
-        mid = 31
+        mid = session['id']
         drug = request.json['drug']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         query1 = """
@@ -209,7 +242,12 @@ def drug():
 @app.route('/create_schedule', methods =['GET', 'POST', 'PUT']) 
 def create():
     if request.method == 'POST' and 'drug' in request.json and 'startDate' in request.json and 'endDate' in request.json and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json and 'bag' in request.json:
-        
+        #daily格式錯誤
+        if(isValidateTime(request.json['daily']) == False):
+            return jsonify({'result':'Wrong daily format！'})
+        #startDate or endDate 格式錯誤
+        elif(isValidateDATE(request.json['startDate']) == False or isValidateDATE(request.json['endDate'])== False):
+            return jsonify({'result':'Wrong Date format！'})
         drug_temp = request.json['drug'] 
         cursor1 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor1.execute('select drugId from drug where chName=%s or enName=%s', (drug_temp, drug_temp))
@@ -276,8 +314,19 @@ def schedule():
             return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
         else:
             return jsonify({'Result':'No record!'})
-    else:
-        return jsonify({"Result":'Wrong Request'})
+    
+    elif request.method =='GET':
+        mid = session['id'] #session['id']
+        query = """
+        select * from schedule where scheduleMid = %s
+        """
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(query , (mid, ))
+        result = list(cursor.fetchall())
+        if result:
+            return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
+        else:
+            return jsonify({'Result':'No record!'})
 
 #查詢用藥時程
 @app.route('/search_schedule_mon', methods =['GET', 'POST']) 
@@ -434,6 +483,23 @@ def interaction():
             return jsonify({'Result': drugB +" not exit!"})
         else:
             return jsonify({'Result':drugA + " and " + drugB + "not exit!"})
+
+#判斷日期
+def isValidateDATE(datestr):
+    try: 
+        date.fromisoformat(datestr)
+    except:
+        return False
+    else:
+        return True
+#判斷時間
+def isValidateTime(timestr):
+    try: 
+        datetime.strptime(timestr, "%H:%M:%S")
+    except:
+        return False
+    else:
+        return True
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

@@ -495,7 +495,7 @@ def isValidateDATE(datestr):
 #判斷時間
 def isValidateTime(timestr):
     try: 
-        datetime.strptime(timestr, "%H:%M:%S")
+        datetime.strptime(timestr, "%H:%M")
     except:
         return False
     else:

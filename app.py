@@ -92,7 +92,7 @@ def register():
 #更新會員資料
 @app.route('/member_update', methods =['GET', 'POST'])
 def member_update():
-    if request.method == 'POST' and 'name' in request.json and 'password' in request.json and 'allergy'in request.json:
+    if request.method == 'POST' and 'name' in request.json and 'password' in request.json:
         mid = session['id']
         name = request.json['name']
         password = request.json['password']
@@ -102,28 +102,28 @@ def member_update():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(query,(name, password, mid))
         mysql.connection.commit()
-        
+        if 'allergy'in request.json:
         #先刪除過敏藥物
-        query2 = """
-        delete from allergy where allergyMid = %s
-        """
-        cursor.execute(query2,(mid,))
-        mysql.connection.commit()
-        #再插入過敏藥物
-        for i in range(len(request.json['allergy'])):
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            query = """
-            select drugId from drug where enName = %s or chName = %s;
-            """
-            cursor.execute(query, (request.json['allergy'][i]['drug'], request.json['allergy'][i]['drug'],))
-            result = cursor.fetchone()
-            drugid = result['drugId']
-            #找出id後新增至allergy table
             query2 = """
-            insert into allergy (allergyMid, allergyDrugId) values (%s, %s);
+            delete from allergy where allergyMid = %s
             """
-            cursor.execute(query2, (mid, drugid, ))
+            cursor.execute(query2,(mid,))
             mysql.connection.commit()
+            #再插入過敏藥物
+            for i in range(len(request.json['allergy'])):
+                cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+                query = """
+                select drugId from drug where enName = %s or chName = %s;
+                """
+                cursor.execute(query, (request.json['allergy'][i]['drug'], request.json['allergy'][i]['drug'],))
+                result = cursor.fetchone()
+                drugid = result['drugId']
+                #找出id後新增至allergy table
+                query2 = """
+                insert into allergy (allergyMid, allergyDrugId) values (%s, %s);
+                """
+                cursor.execute(query2, (mid, drugid, ))
+                mysql.connection.commit()
         return jsonify({'Result':'update successfully!'})
     else:
         return jsonify({'Result':'Something went wrong'})

@@ -5,10 +5,10 @@ from torchvision import models,transforms
 
 m = models.resnet18()
 num_ftrs = m.fc.in_features
-m.fc = torch.nn.Linear(num_ftrs, 380)
+m.fc = torch.nn.Linear(num_ftrs, 1888)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-m.load_state_dict(torch.load('test.pth', map_location=torch.device('cpu')))
+m.load_state_dict(torch.load('model_state_1203.pth', map_location=torch.device('cpu')))
 m = m.to(device)
 m.eval()
 
@@ -28,7 +28,7 @@ def transform_image(image_bytes):
 # predict
 def get_pred(image_tensor):
 
-    f = open('drug_name_1117.txt',encoding='utf-8', errors='ignore')
+    f = open('drug_name_1203.txt',encoding='utf-8', errors='ignore')
     a = f.read()
     a_list = a.split(',')
     b = list(a_list)

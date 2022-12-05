@@ -47,6 +47,7 @@ def logout():
 #註冊
 @app.route('/register', methods =['GET', 'POST'])
 def register():
+    
     if request.method == 'POST' and 'username' in request.json and 'account' in request.json and 'password' in request.json:
         username = request.json['username']
         account = request.json['account']
@@ -73,7 +74,7 @@ def register():
                     query = """
                     select drugId from drug where enName = %s or chName = %s;
                     """
-                    cursor.execute(query, (request.json['allergy'][i], request.json['allergy'][i],))
+                    cursor.execute(query, (request.json['allergy'][i]['drug'], request.json['allergy'][i]['drug'],))
                     result = cursor.fetchone()
                     drugid = result['drugId']
                     #找出id後新增至allergy table
@@ -114,7 +115,7 @@ def member_update():
             query = """
             select drugId from drug where enName = %s or chName = %s;
             """
-            cursor.execute(query, (request.json['allergy'][i], request.json['allergy'][i],))
+            cursor.execute(query, (request.json['allergy'][i]['drug'], request.json['allergy'][i]['drug'],))
             result = cursor.fetchone()
             drugid = result['drugId']
             #找出id後新增至allergy table
@@ -269,7 +270,13 @@ def create():
             return jsonify({'Result':'Drug do not exist!'})
 
     if request.method == 'PUT' and 'sid' in request.json and 'drug' in request.json and 'startDate' in request.json and 'endDate' in request.json and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json and 'bag' in request.json:
-        
+        #daily格式錯誤
+        if(isValidateTime(request.json['daily']) == False):
+            return jsonify({'result':'Wrong daily format！'})
+        #startDate or endDate 格式錯誤
+        elif(isValidateDATE(request.json['startDate']) == False or isValidateDATE(request.json['endDate'])== False):
+            return jsonify({'result':'Wrong Date format！'})
+            
         drug_temp = request.json['drug'] 
         cursor1 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor1.execute('select drugId from drug where chName=%s or enName=%s', (drug_temp, drug_temp))
@@ -311,19 +318,26 @@ def schedule():
         cursor.execute(query , (date, date, mid, ))
         result = list(cursor.fetchall())
         if result:
+            for idx, val in enumerate(result):
+                val['daily'] = str(val['daily'])
+                val['daily'] = val['daily'][:5]
             return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
         else:
             return jsonify({'Result':'No record!'})
     
     elif request.method =='GET':
-        mid = session['id'] #session['id']
+        mid = session['id']
         query = """
         select * from schedule where scheduleMid = %s
         """
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(query , (mid, ))
         result = list(cursor.fetchall())
+        #12:00:00 -> 12:00
         if result:
+            for idx, val in enumerate(result):
+                val['daily'] = str(val['daily'])
+                val['daily'] = val['daily'][:5]
             return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
         else:
             return jsonify({'Result':'No record!'})

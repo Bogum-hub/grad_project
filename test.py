@@ -14,7 +14,7 @@ import requests
 ####################### 用藥時程相關 ###########################
 # resp = requests.post("http://127.0.0.1:5000/create_schedule", json={"drug": '綠油精', "startDate": '2021-01-01', "endDate": '2021-12-10', "duration": '1', "daily": '09:00', "bag": 'c', "hint": '1'})
 # resp = requests.put("http://127.0.0.1:5000/create_schedule", json={"sid":'18', "drug": '綠油精', "startDate": '2021-10-10', "endDate": '2021-12-10', "duration": '1', "daily": '12:00', "bag": '藥袋B', "hint": '1'})
-# resp = requests.post("http://127.0.0.1:5000/search_schedule", json={"date":'2022-12-01'})
+# resp = requests.post("http://127.0.0.1:5000/search_schedule", json={"date":'2021-10-10'})
 resp = requests.get("http://127.0.0.1:5000/search_schedule")
 # resp = requests.post("http://127.0.0.1:5000/search_schedule_mon", json={"date":'202112', "mon":12})
 

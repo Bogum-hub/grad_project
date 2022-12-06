@@ -57,9 +57,9 @@ def register():
         cursor.execute('Select * FROM member WHERE mAccount = %s', (account, ))
         account_check = cursor.fetchone()
         if account_check:
-            return jsonify({'result':'Account already exist!'})
+            return jsonify({'Result':'Account already exist!'})
         elif not username or not password:
-            return jsonify({'result':'Please fill out the form!'})
+            return jsonify({'Result':'Please fill out the form!'})
         else:
             cursor.execute('Insert into member(name, maccount, mpassword) values(%s, %s, %s)', (username, request.json['account'], password,))
             mysql.connection.commit()
@@ -83,11 +83,11 @@ def register():
                     """
                     cursor.execute(query2, (mid, drugid, ))
                     mysql.connection.commit()
-                return jsonify({'result': '新增帳號&過敏資訊成功'})
+                return jsonify({'Result': '新增帳號&過敏資訊成功'})
             else:
-                return jsonify({'result': '新增帳號成功'})
+                return jsonify({'Result': '新增帳號成功'})
     else:   
-        return jsonify({'result':'sign up failed'})
+        return jsonify({'Result':'sign up failed'})
 
 #更新會員資料
 @app.route('/member_update', methods =['GET', 'POST'])
@@ -164,7 +164,7 @@ def search():
 
         drug = str(request.json['drug'])
         if (drug.rstrip() == ''):
-            return jsonify({'result':'NA'})
+            return jsonify({'Result':'NA'})
 
         drug_EN = str(request.json['drug'] + "%")
         drug_CH = str("%" + request.json['drug'] + "%")
@@ -187,10 +187,10 @@ def search():
                     temp.append(result[i]['chName'])
             return jsonify(temp)
         else:
-            return jsonify({'result':'NA'})
+            return jsonify({'Result':'NA'})
 
     else:
-        return jsonify({'result':'something wrong'})
+        return jsonify({'Result':'something wrong'})
         
 #查詢藥物
 @app.route('/search_drug', methods =['GET', 'POST'])
@@ -245,10 +245,10 @@ def create():
     if request.method == 'POST' and 'drug' in request.json and 'startDate' in request.json and 'endDate' in request.json and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json and 'bag' in request.json:
         #daily格式錯誤
         if(isValidateTime(request.json['daily']) == False):
-            return jsonify({'result':'Wrong daily format！'})
+            return jsonify({'Result':'Wrong daily format！'})
         #startDate or endDate 格式錯誤
         elif(isValidateDATE(request.json['startDate']) == False or isValidateDATE(request.json['endDate'])== False):
-            return jsonify({'result':'Wrong Date format！'})
+            return jsonify({'Result':'Wrong Date format！'})
         drug_temp = request.json['drug'] 
         cursor1 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor1.execute('select drugId from drug where chName=%s or enName=%s', (drug_temp, drug_temp))
@@ -272,10 +272,10 @@ def create():
     if request.method == 'PUT' and 'sid' in request.json and 'drug' in request.json and 'startDate' in request.json and 'endDate' in request.json and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json and 'bag' in request.json:
         #daily格式錯誤
         if(isValidateTime(request.json['daily']) == False):
-            return jsonify({'result':'Wrong daily format！'})
+            return jsonify({'Result':'Wrong daily format！'})
         #startDate or endDate 格式錯誤
         elif(isValidateDATE(request.json['startDate']) == False or isValidateDATE(request.json['endDate'])== False):
-            return jsonify({'result':'Wrong Date format！'})
+            return jsonify({'Result':'Wrong Date format！'})
             
         drug_temp = request.json['drug'] 
         cursor1 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -299,7 +299,7 @@ def create():
             cursor.execute(query, (scheduleDrugId, startDate, endDate, duration, daily, bag, hint, sid, ))
             mysql.connection.commit()
             cursor.close()
-            return jsonify({'result': 'update successfully!'})
+            return jsonify({'Result': 'update successfully!'})
     else:
         return jsonify({'Result': 'error!'})
 

@@ -320,7 +320,10 @@ def schedule():
         if result:
             for idx, val in enumerate(result):
                 val['daily'] = str(val['daily'])
-                val['daily'] = val['daily'][:5]
+                if(len(val['daily']) == 8):
+                    val['daily'] = val['daily'][:5]
+                else:
+                    val['daily'] = '0' + val['daily'][:4]
             return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
         else:
             return jsonify({'Result':'No record!'})
@@ -337,7 +340,10 @@ def schedule():
         if result:
             for idx, val in enumerate(result):
                 val['daily'] = str(val['daily'])
-                val['daily'] = val['daily'][:5]
+                if(len(val['daily']) == 8):
+                    val['daily'] = val['daily'][:5]
+                else:
+                    val['daily'] = '0' + val['daily'][:4]
             return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
         else:
             return jsonify({'Result':'No record!'})

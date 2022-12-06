@@ -318,12 +318,6 @@ def schedule():
         cursor.execute(query , (date, date, mid, ))
         result = list(cursor.fetchall())
         if result:
-            for idx, val in enumerate(result):
-                val['daily'] = str(val['daily'])
-                if(len(val['daily']) == 8):
-                    val['daily'] = val['daily'][:5]
-                else:
-                    val['daily'] = '0' + val['daily'][:4]
             return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
         else:
             return jsonify({'Result':'No record!'})
@@ -336,14 +330,7 @@ def schedule():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(query , (mid, ))
         result = list(cursor.fetchall())
-        #12:00:00 -> 12:00
         if result:
-            for idx, val in enumerate(result):
-                val['daily'] = str(val['daily'])
-                if(len(val['daily']) == 8):
-                    val['daily'] = val['daily'][:5]
-                else:
-                    val['daily'] = '0' + val['daily'][:4]
             return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
         else:
             return jsonify({'Result':'No record!'})

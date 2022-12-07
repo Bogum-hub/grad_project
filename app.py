@@ -412,17 +412,16 @@ def schedule_mon():
             else:
                 a['status'] = 'all'
                 day = 1
-                starter = str(year) + '-' + str(mon)+ '-0' + str(day)
-                starter = datetime.strptime(starter, '%Y-%m-%d').date()
 
                 while True:
+                    starter = str(year) + '-' + str(mon)+ '-0' + str(day)
+                    starter = datetime.strptime(starter, '%Y-%m-%d').date()
                     interval = starter - result[i]['startdate'] 
                     if (interval.days / (result[i]['duration'])) % 1 == 0:
                         break
                     else:
                         day = day + 1
-                        starter = str(year) + '-' + str(mon)+ '-0' + str(day)
-                        starter = datetime.strptime(starter, '%Y-%m-%d').date()
+
                 match mon:
                     case 1|3|5|7|8|10|12:
                         end = 31
@@ -434,7 +433,7 @@ def schedule_mon():
                 if (mon == 2) and (year % 4 == 0) and (year % 100 !=0) or (year % 400) == 0:
                     end = 29
 
-                for i in range(day, end, result[i]['duration']):
+                for i in range(day, end+1, result[i]['duration']):
                     b.append(i)
                 a['date'] = b
             c.append(a)

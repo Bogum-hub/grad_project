@@ -211,7 +211,6 @@ def drug():
             a = '是'
         else:
             a = '否'
-        
         #照片存在的情況下
         query = """
         SELECT *
@@ -255,7 +254,9 @@ def create():
         drug = cursor1.fetchone()
         if drug:
             scheduleDrugId = drug['drugId']#先抓出使用者所輸入的藥品名稱
-            mid = session['id']
+            mid = session['id'] 
+            if request.json['startDate'] > request.json['endDate']:
+                return jsonify({'Result':'error! endDate should be later'})
             startDate = request.json['startDate'] #開始吃藥時間
             endDate = request.json['endDate'] #結束吃藥時間
             duration = request.json['duration'] #間隔時間
@@ -285,6 +286,8 @@ def create():
         if drug:
             sid = request.json.get('sid')
             scheduleDrugId = drug['drugId']#先抓出使用者所輸入的藥品名稱
+            if request.json['startDate'] > request.json['endDate']:
+                return jsonify({'Result':'error! endDate should be later'})
             startDate = request.json['startDate'] #開始吃藥時間
             endDate = request.json['endDate'] #結束吃藥時間
             duration = request.json['duration'] #間隔時間
@@ -306,6 +309,7 @@ def create():
 #查詢用藥時程
 @app.route('/search_schedule', methods =['GET', 'POST']) 
 def schedule():
+
     if request.method =='POST' and 'date' in request.json:
         mid = session['id']
         date = request.json['date']
@@ -318,6 +322,13 @@ def schedule():
         cursor.execute(query , (date, date, mid, ))
         result = list(cursor.fetchall())
         if result:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+            for i in range(len(result)):
+                interval = result[i]['startdate'] - date
+                if (interval.days / (result[i]['duration'])) % 1 != 0:
+                    del result[i]
+            if result == []:
+                return jsonify({'Result':'No record!'})
             return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
         else:
             return jsonify({'Result':'No record!'})
@@ -341,10 +352,11 @@ def schedule_mon():
     if request.method =='POST' and 'date' in request.json:
         mid = session['id']
         date = request.json['date']
+        year = request.json['year']
         mon = request.json['mon']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         query = """
-        select bag, startdate, enddate, scheduleMid, extract(day from startdate) as start, extract(day from enddate) as end, extract(day from startdate) as start_end,
+        select bag, startdate, enddate, duration, scheduleMid, extract(day from startdate) as start, extract(day from enddate) as end, extract(day from startdate) as start_end,
         (	case
             when extract(YEAR_month from enddate) = extract(YEAR_month from startdate) then 'start_end'
             when extract(YEAR_month from startdate) = %s then 'start'
@@ -371,7 +383,7 @@ def schedule_mon():
             #起始月=結束月
             if(result[i]['if_all_month'] == 'start_end'):
                 a['status'] = 'in a month'
-                for i in range(result[i]['start'], result[i]['end']+1):
+                for i in range(result[i]['start'], result[i]['end']+1, result[i]['duration']):
                     b.append(i)
                 a['date'] = b
 
@@ -385,29 +397,47 @@ def schedule_mon():
                         treshold = 30
                     case _:
                         treshold = 28
-                for i in range(result[i]['start'], treshold+1):
+                for i in range(result[i]['start'], treshold+1, result[i]['duration']):
                     b.append(i)
                 a['date'] = b
 
             #結束月
             elif(result[i]['if_all_month'] == 'end'):
                 a['status'] = 'end month of schedule'
-                for i in range(result[i]['end']):
-                    b.append(i+1)
-                a['date'] = b
+                for i in range(result[i]['end'], 1, -result[i]['duration']):
+                    b.append(i)
+                a['date'] = sorted(b)
                 
             #之間
             else:
                 a['status'] = 'all'
+                day = 1
+                starter = str(year) + '-' + str(mon)+ '-0' + str(day)
+                starter = datetime.strptime(starter, '%Y-%m-%d').date()
+
+                while True:
+                    interval = starter - result[i]['startdate'] 
+                    if (interval.days / (result[i]['duration'])) % 1 == 0:
+                        break
+                    else:
+                        day = day + 1
+                        starter = str(year) + '-' + str(mon)+ '-0' + str(day)
+                        starter = datetime.strptime(starter, '%Y-%m-%d').date()
                 match mon:
                     case 1|3|5|7|8|10|12:
-                        a['date'] = 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+                        end = 31
                     case 4|6|9|11:
-                        a['date'] = 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
-                    case _:
-                        a['date'] = 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28
-            c.append(a)
+                        end = 30
+                    case 2:
+                        end = 28
+                #閏年
+                if (mon == 2) and (year % 4 == 0) and (year % 100 !=0) or (year % 400) == 0:
+                    end = 29
 
+                for i in range(day, end, result[i]['duration']):
+                    b.append(i)
+                a['date'] = b
+            c.append(a)
         if result:
             return jsonify({'Result':c})
         else:

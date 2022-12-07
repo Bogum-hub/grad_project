@@ -255,6 +255,7 @@ def create():
         if drug:
             scheduleDrugId = drug['drugId']#先抓出使用者所輸入的藥品名稱
             mid = session['id'] 
+            #日期判斷
             if request.json['startDate'] > request.json['endDate']:
                 return jsonify({'Result':'error! endDate should be later'})
             startDate = request.json['startDate'] #開始吃藥時間
@@ -286,6 +287,7 @@ def create():
         if drug:
             sid = request.json.get('sid')
             scheduleDrugId = drug['drugId']#先抓出使用者所輸入的藥品名稱
+            #日期判斷
             if request.json['startDate'] > request.json['endDate']:
                 return jsonify({'Result':'error! endDate should be later'})
             startDate = request.json['startDate'] #開始吃藥時間

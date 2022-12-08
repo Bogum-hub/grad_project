@@ -401,7 +401,7 @@ def schedule_mon():
             else 'yes'
             END) AS if_all_month
         from schedule, bag 
-        where scheduleMid=%s
+        where scheduleMid=%s and scheduleBagId = bid
         HAVING extract(YEAR_month from startdate) <= %s AND %s <= extract(YEAR_month from enddate) 
         """
         cursor.execute(query, (date, date, mid, date, date,))

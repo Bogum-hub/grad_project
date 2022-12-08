@@ -111,7 +111,7 @@ def register():
 @app.route('/member_update', methods =['GET', 'POST'])
 def member_update():
     if request.method == 'POST' and 'name' in request.json and 'password' in request.json:
-        mid = 33#session['id']
+        mid = session['id']
         name = request.json['name']
         password = request.json['password']
         query = """
@@ -164,7 +164,7 @@ def member_update():
 def member_data():
     if request.method == "GET":
 
-        id = 33#session['id']
+        id = session['id']
 
         ##################會員基本資料#####################
         query = """

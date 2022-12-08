@@ -164,7 +164,7 @@ def member_update():
 def member_data():
     if request.method == "GET":
 
-        id = 31#session['id']
+        id = session['id']
 
         ##################會員基本資料#####################
         query = """

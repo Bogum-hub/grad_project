@@ -295,43 +295,27 @@ def drug():
 #新增用藥時程/編輯用藥時程
 @app.route('/create_schedule', methods =['GET', 'POST', 'PUT']) 
 def create():
-    if request.method == 'POST' and 'drug' in request.json and 'startDate' in request.json and 'endDate' in request.json and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json and 'bag' in request.json:
-        #daily格式錯誤
-        if(isValidateTime(request.json['daily']) == False):
-            return jsonify({'Result':'Wrong daily format！'})
-        #startDate or endDate 格式錯誤
-        elif(isValidateDATE(request.json['startDate']) == False or isValidateDATE(request.json['endDate'])== False):
-            return jsonify({'Result':'Wrong Date format！'})
+    if request.method == 'POST' and 'drug' in request.json  and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json  and 'scheduleBagId' in request.json:
+
         drug_temp = request.json['drug'] 
         cursor1 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor1.execute('select drugId from drug where chName=%s or enName=%s', (drug_temp, drug_temp))
         drug = cursor1.fetchone()
         if drug:
-            scheduleDrugId = drug['drugId']#先抓出使用者所輸入的藥品名稱
             mid = session['id'] 
-            #日期判斷
-            if request.json['startDate'] > request.json['endDate']:
-                return jsonify({'Result':'error! endDate should be later'})
-            startDate = request.json['startDate'] #開始吃藥時間
-            endDate = request.json['endDate'] #結束吃藥時間
+            scheduleDrugId = drug['drugId']#先抓出使用者所輸入的藥品名稱
+            bagID = request.json['scheduleBagId'] #藥袋ID
             duration = request.json['duration'] #間隔時間
             daily = request.json['daily'] #每天幾點吃
             hint = request.json['hint'] #定時提醒
-            bag = request.json['bag'] #藥袋
             cursor2 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor2.execute('insert into schedule(scheduleMid, scheduleDrugId, startDate, endDate, duration, daily, isHint, bag) values (%s, %s, %s, %s, %s, %s, %s, %s)', (mid, scheduleDrugId, startDate, endDate, duration, daily, hint, bag, ))
+            cursor2.execute('insert into schedule(scheduleMid, scheduleDrugId, scheduleBagId, daily, duration, isHint) values (%s, %s, %s, %s, %s, %s)', (mid, scheduleDrugId, bagID, daily, duration,  hint,  ))
             mysql.connection.commit()
             return jsonify({'Result':' Schedule create successfully!'})
         else:
             return jsonify({'Result':'Drug do not exist!'})
 
-    if request.method == 'PUT' and 'sid' in request.json and 'drug' in request.json and 'startDate' in request.json and 'endDate' in request.json and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json and 'bag' in request.json:
-        #daily格式錯誤
-        if(isValidateTime(request.json['daily']) == False):
-            return jsonify({'Result':'Wrong daily format！'})
-        #startDate or endDate 格式錯誤
-        elif(isValidateDATE(request.json['startDate']) == False or isValidateDATE(request.json['endDate'])== False):
-            return jsonify({'Result':'Wrong Date format！'})
+    if request.method == 'PUT' and 'sid' in request.json and 'drug' in request.json  and 'duration' in request.json and 'daily' in request.json and 'hint' in request.json  and 'scheduleBagId' in request.json:
             
         drug_temp = request.json['drug'] 
         cursor1 = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -341,21 +325,15 @@ def create():
         if drug:
             sid = request.json.get('sid')
             scheduleDrugId = drug['drugId']#先抓出使用者所輸入的藥品名稱
-            #日期判斷
-            if request.json['startDate'] > request.json['endDate']:
-                return jsonify({'Result':'error! endDate should be later'})
-            startDate = request.json['startDate'] #開始吃藥時間
-            endDate = request.json['endDate'] #結束吃藥時間
+            bagID = request.json['scheduleBagId'] #藥袋ID
             duration = request.json['duration'] #間隔時間
             daily = request.json['daily'] #每天幾點吃
             hint = request.json['hint'] #定時提醒
-            bag = request.json['bag'] #藥袋
             query = """
-            UPDATE schedule set scheduledrugid = %s, startDate=%s, enddate=%s, duration=%s, daily=%s, bag=%s, ishint=%s
-            where sId = %s;
+            UPDATE schedule set scheduledrugid = %s, scheduleBagId = %s, daily=%s, duration=%s, ishint=%s where sId = %s;
             """
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            cursor.execute(query, (scheduleDrugId, startDate, endDate, duration, daily, bag, hint, sid, ))
+            cursor.execute(query, (scheduleDrugId, bagID, daily, duration, hint, sid, ))
             mysql.connection.commit()
             cursor.close()
             return jsonify({'Result': 'update successfully!'})
@@ -371,9 +349,9 @@ def schedule():
         date = request.json['date']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         query = """
-        select sId, startdate, enddate, daily, bag, ishint, chname, enName, duration
-        from schedule, drug 
-        where startdate <= %s and enddate>= %s and scheduleMid = %s and drug.drugId = scheduleDrugId order by daily
+        select sId, startdate, enddate, daily, ishint, chname, enName, duration, bagName
+        from schedule, drug, bag
+        where startdate <= %s and enddate>= %s and scheduleMid = %s and drug.drugId = scheduleDrugId and scheduleBagId = bid order by daily
         """
         cursor.execute(query , (date, date, mid, ))
         result = list(cursor.fetchall())
@@ -412,18 +390,16 @@ def schedule_mon():
         mon = request.json['mon']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         query = """
-        select bag, startdate, enddate, duration, scheduleMid, extract(day from startdate) as start, extract(day from enddate) as end, extract(day from startdate) as start_end,
+        select bagName, startdate, enddate, duration, scheduleMid, extract(day from startdate) as start, extract(day from enddate) as end, extract(day from startdate) as start_end,
         (	case
             when extract(YEAR_month from enddate) = extract(YEAR_month from startdate) then 'start_end'
             when extract(YEAR_month from startdate) = %s then 'start'
             when extract(YEAR_month from enddate) = %s then 'end'
             else 'yes'
             END) AS if_all_month
-        from schedule 
+        from schedule, bag 
         where scheduleMid=%s
-        GROUP BY bag
         HAVING extract(YEAR_month from startdate) <= %s AND %s <= extract(YEAR_month from enddate) 
-        ORDER BY bag;
         """
         cursor.execute(query, (date, date, mid, date, date,))
         result = cursor.fetchall()
@@ -431,7 +407,7 @@ def schedule_mon():
 
         for i in range(len(result)):
             a = {}
-            a['bag'] = result[i]['bag']
+            a['bag'] = result[i]['bagName']
             a['date'] = []
             a['month'] = mon
             b = []
@@ -592,6 +568,13 @@ def isValidateTime(timestr):
         return False
     else:
         return True
+
+# #daily格式錯誤
+# if(isValidateTime(request.json['daily']) == False):
+#     return jsonify({'Result':'Wrong daily format！'})
+# #startDate or endDate 格式錯誤
+# elif(isValidateDATE(request.json['startDate']) == False or isValidateDATE(request.json['endDate'])== False):
+#     return jsonify({'Result':'Wrong Date format！'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

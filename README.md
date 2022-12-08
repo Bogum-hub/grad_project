@@ -30,10 +30,18 @@ route-/member_data, request method-GET (在已登入的情況下)
 route-/member_update, request method-POST (在已登入的情況下)
 DATA needed: json={"name", "account", "password", "allergy", "bag"}
 
+#### 新增用藥時程：
+route-/create_schedule, request method-POST
+DATA needed: json={"drug", "duration", "daily", "scheduleBagId", "hint"}
+
 #### 編輯用藥時程：
 route-/create_schedule, request method-PUT
-DATA needed: json={"sid", "drug", "startDate", "endDate", "duration", "daily", "bag", "hint"}
-若日期不合法："result": "Wrong Date format！" / 若時間不合法"result": "Wrong Daily format！"
+DATA needed: json={"sid", "drug", "duration", "daily", "scheduleBagId","hint"}
+
+#### 查詢用藥時程(for月份)
+route-/search_schedule_mon, request method-POST
+DATA needed: json={"date", "mon", "year"}
+***請注意：date請給年份月份，如2022年12月，則為{"date":"202212", "mon":12, "year":2022} (date為string, mon&year為integer)
 
 #### GET使用者schedule
 route-/search_schedule, request method-GET
@@ -43,8 +51,3 @@ route-/search, request method-POST
 DATA needed: json={"drug"}
 回傳：至多10筆 LIKE drug%(英文) OR %drug%(中文)的結果
 
-#### 查詢用藥時程(for月份)
-route-/search_schedule_mon, request method-POST
-DATA needed: json={"date", "mon"}
-***請注意：date請給年份月份，如2022年12月，則為{"date":"202212", "mon":12} (date為string, mon為integer)
-***藥袋起始日期必須相同，功能才正常

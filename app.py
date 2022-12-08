@@ -164,7 +164,7 @@ def member_update():
 def member_data():
     if request.method == "GET":
 
-        id = session['id']
+        id = 31#session['id']
 
         ##################會員基本資料#####################
         query = """
@@ -200,7 +200,7 @@ def member_data():
         cursor.execute(query,(id, ))
         result1 = cursor.fetchall()
         if not result1:
-            result1 = {'allergy':'NA'}
+            result1 = {'allergy':[]}
         else:
             a = []
             for i in range(len(result1)):

@@ -111,7 +111,7 @@ def register():
 @app.route('/member_update', methods =['GET', 'POST'])
 def member_update():
     if request.method == 'POST' and 'name' in request.json and 'password' in request.json:
-        mid = session['id']
+        mid = 31#session['id']
         name = request.json['name']
         password = request.json['password']
         query = """
@@ -146,7 +146,7 @@ def member_update():
                 query = """
                 select drugId from drug where enName = %s or chName = %s;
                 """
-                cursor.execute(query, (request.json['allergy'][i]['drug'], request.json['allergy'][i]['drug'],))
+                cursor.execute(query, (request.json['allergy'][i], request.json['allergy'][i],))
                 result = cursor.fetchone()
                 drugid = result['drugId']
                 #找出id後新增至allergy table

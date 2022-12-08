@@ -180,7 +180,7 @@ def member_data():
         ###################會員藥袋資料###################
 
         query = """
-        select bagName, startDate, endDate
+        select bid, bagName, startDate, endDate
         from member, bag
         where mid = %s and bagMid = mid
         """
@@ -192,7 +192,7 @@ def member_data():
         ###################會員過敏資料###################
 
         query = """
-        select chName, enName
+        select chName
         from allergy, drug
         where drugId = allergyDrugId and allergyMid = %s;
         """
@@ -202,7 +202,10 @@ def member_data():
         if not result1:
             result1 = {'allergy':'NA'}
         else:
-            result1 = {'allergy':result1}
+            a = []
+            for i in range(len(result1)):
+                a.append(result1[i]['chName'])
+            result1 = {'allergy':a}
 
         d = result.copy()
         d.update(result1)

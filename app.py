@@ -47,12 +47,11 @@ def logout():
 #註冊
 @app.route('/register', methods =['GET', 'POST'])
 def register():
-    
-    if request.method == 'POST' and 'username' in request.json and 'account' in request.json and 'password' in request.json:
+    if request.method == 'POST' and 'username' in request.json and 'account' in request.json and 'password' in request.json and 'bag' in request.json:
         username = request.json['username']
         account = request.json['account']
         password = request.json['password']
-        
+
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('Select * FROM member WHERE mAccount = %s', (account, ))
         account_check = cursor.fetchone()
@@ -63,12 +62,31 @@ def register():
         else:
             cursor.execute('Insert into member(name, maccount, mpassword) values(%s, %s, %s)', (username, request.json['account'], password,))
             mysql.connection.commit()
+
+            cursor.execute('select mId from member where maccount = %s;', (request.json['account'], ))
+            result = cursor.fetchone()
+            mid = result['mId'] #記錄使用者id
+
+            #新增DEFAULT藥袋時長
+            query = """
+            insert into bag(bagMid, bagName, startDate, endDate) values(%s, %s, %s, %s);
+            """
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute(query, (mid, '藥袋A', request.json['bag'][0]['藥袋A'][0]['startDate'], request.json['bag'][0]['藥袋A'][1]['endDate'],))
+            mysql.connection.commit()
+
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute(query, (mid, '藥袋B', request.json['bag'][1]['藥袋B'][0]['startDate'], request.json['bag'][1]['藥袋B'][1]['endDate'],))
+            mysql.connection.commit()
+
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute(query, (mid, '藥袋C', request.json['bag'][2]['藥袋C'][0]['startDate'], request.json['bag'][2]['藥袋C'][1]['endDate'],))
+            mysql.connection.commit()
+
+
             #有輸入藥品過敏資訊
             if request.json['allergy'] != []:
-                #先找出使用者id&藥品id
-                cursor.execute('select mId from member where maccount = %s;', (request.json['account'], ))
-                result = cursor.fetchone()
-                mid = result['mId'] #記錄使用者id
+                #先找出藥品id
                 for i in range(len(request.json['allergy'])):
                     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
                     query = """
@@ -93,7 +111,7 @@ def register():
 @app.route('/member_update', methods =['GET', 'POST'])
 def member_update():
     if request.method == 'POST' and 'name' in request.json and 'password' in request.json:
-        mid = session['id']
+        mid = 33#session['id']
         name = request.json['name']
         password = request.json['password']
         query = """
@@ -102,6 +120,19 @@ def member_update():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(query,(name, password, mid))
         mysql.connection.commit()
+
+        query = """
+        update bag set startDate = %s, endDate = %s where bagMid = %s and bagName = %s
+        """
+        cursor.execute(query,(request.json['bag'][0]['藥袋A'][0]['startDate'], request.json['bag'][0]['藥袋A'][1]['endDate'], mid, '藥袋A'))
+        mysql.connection.commit()
+
+        cursor.execute(query,(request.json['bag'][1]['藥袋B'][0]['startDate'], request.json['bag'][1]['藥袋B'][1]['endDate'], mid, '藥袋B'))
+        mysql.connection.commit()
+
+        cursor.execute(query,(request.json['bag'][2]['藥袋C'][0]['startDate'], request.json['bag'][2]['藥袋C'][1]['endDate'], mid, '藥袋C'))
+        mysql.connection.commit()
+
         if 'allergy'in request.json:
         #先刪除過敏藥物
             query2 = """
@@ -132,30 +163,53 @@ def member_update():
 @app.route('/member_data')
 def member_data():
     if request.method == "GET":
-        id = session['id']
-        query ="""
-        select * from member where mid = %s;
+
+        id = 33#session['id']
+
+        ##################會員基本資料#####################
+        query = """
+        select mId, name, mAccount, mPassword
+        from member
+        where mid = %s ;
         """
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute(query,(id,))
-        result = cursor.fetchone()
-        query1 = """
-        select mId, name, mAccount, mPassword, chName, enName 
-        from member, allergy, drug
-        where mid = %s and allergyMid = %s AND drugId = allergyDrugId;
+        cursor.execute(query,(id, ))
+        result = cursor.fetchall()
+        result = {'data':result}
+
+        ###################會員藥袋資料###################
+
+        query = """
+        select bagName, startDate, endDate
+        from member, bag
+        where mid = %s and bagMid = mid
         """
-        cursor.execute(query1,(id, id))
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(query,(id, ))
+        result2 = cursor.fetchall()
+        result2 = {'bag':result2}
+
+        ###################會員過敏資料###################
+
+        query = """
+        select chName, enName
+        from allergy, drug
+        where drugId = allergyDrugId and allergyMid = %s;
+        """
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(query,(id, ))
         result1 = cursor.fetchall()
-        allergy = []
-        if result1:
-            for i in range(len(result1)):
-                allergy.append(result1[i]['chName'])
-        if result:
-            return jsonify({'Result': result, 'allergy':allergy})
+        if not result1:
+            result1 = {'allergy':'NA'}
         else:
-            return jsonify({'Result': 'no'})
-    else:
-        return jsonify({'Result': 'Wrong request'})
+            result1 = {'allergy':result1}
+
+        d = result.copy()
+        d.update(result1)
+        d.update(result2)
+        
+        return json.dumps(d, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
+
 
 #搜尋藥品字串比對
 @app.route('/search', methods =['GET', 'POST'])

@@ -348,7 +348,7 @@ def create():
 def schedule():
 
     if request.method =='POST' and 'date' in request.json:
-        mid = 31#session['id']
+        mid = session['id']
         date = request.json['date']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         query = """

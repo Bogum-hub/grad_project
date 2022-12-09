@@ -374,7 +374,7 @@ def schedule():
     elif request.method =='GET':
         mid = session['id']
         query = """
-        select * from schedule where scheduleMid = %s
+        select * from schedule, bag where scheduleMid = %s and scheduleBagId=bid
         """
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(query , (mid, ))

@@ -363,8 +363,8 @@ def schedule():
             for i in range(len(result)):
                 interval = result[i]['startdate'] - date
                 if (interval.days / (result[i]['duration'])) % 1 != 0:
-                    del result[i]
-            if result == []:
+                    result[i] = {}
+            if result == [{}]:
                 return jsonify({'Result':'No record!'})
             return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
         else:

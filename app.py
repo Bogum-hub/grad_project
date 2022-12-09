@@ -354,7 +354,7 @@ def schedule():
         query = """
         select sId, startdate, enddate, daily, ishint, chname, enName, duration, bagName
         from schedule, drug, bag
-        where startdate <= %s and enddate>= %s and scheduleMid = %s and drug.drugId = scheduleDrugId and scheduleBagId = bid order by daily
+        where startdate <= %s and enddate>= %s and scheduleMid = %s and drug.drugId = scheduleDrugId and scheduleBagId = bid order by bagName, daily;
         """
         cursor.execute(query , (date, date, mid, ))
         result = list(cursor.fetchall())

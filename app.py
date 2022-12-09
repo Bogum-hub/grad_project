@@ -348,7 +348,7 @@ def create():
 def schedule():
 
     if request.method =='POST' and 'date' in request.json:
-        mid = session['id']
+        mid = 31#session['id']
         date = request.json['date']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         query = """
@@ -356,17 +356,18 @@ def schedule():
         from schedule, drug, bag
         where startdate <= %s and enddate>= %s and scheduleMid = %s and drug.drugId = scheduleDrugId and scheduleBagId = bid order by bagName, daily;
         """
+        schedule = []
         cursor.execute(query , (date, date, mid, ))
         result = list(cursor.fetchall())
         if result:
             date = datetime.strptime(date, '%Y-%m-%d').date()
             for i in range(len(result)):
                 interval = result[i]['startdate'] - date
-                if (interval.days / (result[i]['duration'])) % 1 != 0:
-                    result[i] = {}
-            if result == [{}]:
+                if (interval.days / (result[i]['duration'])) % 1 == 0:
+                    schedule.append(result[i])
+            if schedule == []:
                 return jsonify({'Result':'No record!'})
-            return json.dumps(result, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
+            return json.dumps(schedule, indent=4, sort_keys=True, default=str, ensure_ascii=False).encode('utf8')
         else:
             return jsonify({'Result':'No record!'})
     

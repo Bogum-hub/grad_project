@@ -8,7 +8,7 @@ num_ftrs = m.fc.in_features
 m.fc = torch.nn.Linear(num_ftrs, 1890)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-m.load_state_dict(torch.load('drug_name_1207.pth', map_location=torch.device('cpu')))
+m.load_state_dict(torch.load('model_state_1210.pth', map_location=torch.device('cpu')))
 m = m.to(device)
 m.eval()
 

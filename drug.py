@@ -8,7 +8,7 @@ num_ftrs = m.fc.in_features
 m.fc = torch.nn.Linear(num_ftrs, 1890)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-m.load_state_dict(torch.load('model_state_1210.pth', map_location=torch.device('cpu')))
+m.load_state_dict(torch.load('model_state_1210_new.pth', map_location=torch.device('cpu')))
 m = m.to(device)
 m.eval()
 
@@ -28,7 +28,7 @@ def transform_image(image_bytes):
 # predict
 def get_pred(image_tensor):
 
-    f = open('drug_name_1207.txt',encoding='utf-8', errors='ignore')
+    f = open('drug_name_1210.txt',encoding='utf-8', errors='ignore')
     a = f.read()
     a_list = a.split(',')
     b = list(a_list)
